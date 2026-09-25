@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Nishka on Mobile — Approach &amp; WebView Integration Guide</title>
+<title>Nishka on Mobile — WebView Integration Guide</title>
 <style>
   :root{
     --maroon:#7a1e2b;--maroon-dark:#5c1621;--gold:#b8860b;--gold-soft:#d4af37;
@@ -143,20 +143,13 @@
     <div class="brand">TANISHQ</div>
     <div class="brandsub">Nishka · Mobile Integration</div>
 
-    <div class="part">Part 1 · Shopper Journey</div>
+    <div class="part">Overview</div>
     <ul>
       <li><a href="#g-journey"><span class="n">★</span>End-to-end journey</a></li>
+      <li><a href="#why-webview"><span class="n">◆</span>Why a WebView</a></li>
     </ul>
 
-    <div class="part">Part 2 · Approach</div>
-    <ul>
-      <li><a href="#p1-glance"><span class="n">2.1</span>Options at a glance</a></li>
-      <li><a href="#p1-table"><span class="n">2.2</span>Side-by-side comparison</a></li>
-      <li><a href="#p1-why"><span class="n">2.3</span>Why the renderer decides it</a></li>
-      <li><a href="#p1-rec"><span class="n">2.4</span>Recommendation</a></li>
-    </ul>
-
-    <div class="part">Part 3 · WebView Guide</div>
+    <div class="part">Integration Guide</div>
     <ul>
       <li><a href="#g1"><span class="n">1</span>How it works</a></li>
       <li><a href="#g2"><span class="n">2</span>Prerequisites</a></li>
@@ -185,154 +178,32 @@ MVP — discovery + authenticated context &amp; loyalty actions. No cart / check
     <!-- ================= PART 1 — SHOPPER JOURNEY ================= -->
     <div class="part-banner first">
       <div class="brand">TANISHQ · NISHKA</div>
-      <div class="kicker">Part 1 — Shopper Journey</div>
+      <div class="kicker">Overview</div>
       <h1>What the shopper experiences, end to end</h1>
-      <p>Start with the experience we're building toward. A signed-in shopper opens Nishka, gets a welcome menu, is guided through a product search, taps into a native PDP, checks their digigold balance, and can escalate to a live agent. Parts 2 &amp; 3 explain how we deliver it.</p>
+      <p>Start with the experience we're building toward. A signed-in shopper opens Nishka, gets a welcome menu, is guided through a product search, taps into a native PDP, checks their digigold balance, and can escalate to a live agent. The rest of this guide is how we deliver it in a WebView.</p>
     </div>
 
     <section id="g-journey">
       <h2><span class="num">★</span> End-to-end shopper journey</h2>
-      <p>The whole experience a signed-in shopper sees — from login, through Nishka's welcome menu and a guided product search, to a native PDP, a digigold balance keyed on the verified identity, and escalation to a live agent. Colour tells you what's <b>WebView</b> (chat, buttons, carousel, balance, handoff) vs. <b>native</b> (login, home, PDP); each step is mapped to the Part 3 section that implements it.</p>
+      <p>The whole experience a signed-in shopper sees — from login, through Nishka's welcome menu and a guided product search, to a native PDP, a digigold balance keyed on the verified identity, and escalation to a live agent. Colour tells you what's <b>WebView</b> (chat, buttons, carousel, balance, handoff) vs. <b>native</b> (login, home, PDP); each step is mapped to the section that implements it.</p>
       <div class="journey-frame">
         <iframe src="mockups/nishka-end-to-end-flow.html" title="Nishka end-to-end shopper journey" loading="lazy"></iframe>
       </div>
-      <p class="legend" style="margin-top:10px;">Full-size interactive version: <a href="mockups/nishka-end-to-end-flow.html" target="_blank">open the shopper-journey mockup in a new tab ↗</a>. Part 2 weighs the three ways to build this; Part 3 (§1–§11) is the developer-facing detail behind the flow.</p>
+      <p class="legend" style="margin-top:10px;">Full-size interactive version: <a href="mockups/nishka-end-to-end-flow.html" target="_blank">open the shopper-journey mockup in a new tab ↗</a>. The sections below are the developer-facing detail behind this flow.</p>
     </section>
 
     <hr class="part-rule" />
 
-    <!-- ================= PART 2 — APPROACH ================= -->
+    <!-- ================= WHY WEBVIEW ================= -->
     <div class="part-banner">
-      <div class="kicker">Part 2 — Approach</div>
-      <h1>Bringing Nishka to the native mobile apps — three ways</h1>
-      <p>The Tanishq iOS &amp; Android apps talk to the shopper agent over Salesforce SCRT2 messaging. There are three ways to get there. All reach the same agent; they differ in who renders the rich replies (carousels &amp; chips), how native it feels, and how much we build.</p>
+      <div class="kicker">Approach</div>
+      <h1>Why a WebView — the integration path available today</h1>
+      <p>The Tanishq iOS &amp; Android apps talk to the shopper agent over Salesforce SCRT2 messaging. The rich replies — product carousels and suggestion chips — are drawn by Cimulate's closed <code style="color:#fff;background:rgba(255,255,255,.15)">copilot-widget</code> bundle, which is <b>web-only</b>. Hosting that widget in a native WebView is the way to bring Nishka to the mobile apps now.</p>
     </div>
 
-    <section id="p1-glance">
-      <h2><span class="num">2.1</span> The three options at a glance</h2>
-      <div class="cards">
-        <div class="card a out">
-          <div class="top">
-            <div class="opt">Option A</div>
-            <div class="name">Cimulate shopper-agent SDK</div>
-            <div class="one">A native iOS/Android SDK from Cimulate that <b>renders</b> its own carousels &amp; chips — transport <em>and</em> UI.</div>
-            <div><span class="badge-out">◇ TARGET END-STATE — no SDK today</span></div>
-          </div>
-          <div class="body">
-            <div class="metric"><b>Effort</b><span class="est">Least (when it exists)</span></div>
-            <div class="metric"><b>Native feel</b><span>Highest (native, vendor-owned)</span></div>
-            <div class="metric"><b>We build renderers?</b><span>No — Cimulate does</span></div>
-            <h4>Status</h4>
-            <ul class="con"><li><b>Cimulate has no mobile SDK today.</b></li><li>This is the <b>better long-term solution</b> — fully native rendering, no WebView caveats.</li><li>Push it onto Cimulate's roadmap; migrate when it ships. Nothing in C is throwaway.</li></ul>
-          </div>
-        </div>
-        <div class="card b">
-          <div class="top">
-            <div class="opt">Option B</div>
-            <div class="name">Net-new native build on SCRT2</div>
-            <div class="one">Use the MIAW Mobile SDK — <b>transport only</b> — and build our own native carousel/chip renderers from scratch.</div>
-          </div>
-          <div class="body">
-            <div class="metric"><b>Effort</b><span class="est">~6–8 weeks (both)</span></div>
-            <div class="metric"><b>Native feel</b><span>Highest (fully native)</span></div>
-            <div class="metric"><b>We build renderers?</b><span>Yes — from scratch</span></div>
-            <h4>Pros</h4>
-            <ul><li>Fully native UX, full design control</li><li>No CDN/WebView dependency</li><li>Deep native actions are natural</li></ul>
-            <h4>Cons</h4>
-            <ul class="con"><li><b>MIAW SDK is the pipe, not the UI</b> — it delivers payloads, renders nothing</li><li>Reverse-engineer &amp; rebuild Cimulate's closed renderer against an undocumented payload</li><li>We own it as the agent's replies evolve</li></ul>
-          </div>
-        </div>
-        <div class="card c">
-          <div class="top">
-            <div class="opt">Option C</div>
-            <div class="name">WebView wrap</div>
-            <div class="one">Host Cimulate's existing web widget in a native full-screen WebView; intercept product taps to native.</div>
-            <div><span class="badge-rec">★ RECOMMENDED</span></div>
-          </div>
-          <div class="body">
-            <div class="metric"><b>Effort</b><span class="est">~2 weeks (both)</span></div>
-            <div class="metric"><b>Native feel</b><span>Good (if full-screen + themed)</span></div>
-            <div class="metric"><b>We build renderers?</b><span>No — reuse the web widget</span></div>
-            <h4>Pros</h4>
-            <ul><li>Reuses Cimulate's real renderer — zero rich-reply work</li><li>Fastest to a working showcase</li><li>Auto-inherits widget upgrades</li></ul>
-            <h4>Cons</h4>
-            <ul class="con"><li>Not 100% native (scroll/font/keyboard tells)</li><li>Runtime CDN + WebView dependency</li><li>Product taps need a native interception bridge</li></ul>
-          </div>
-        </div>
-      </div>
-      <p class="legend">Effort assumes existing native apps and an existing PDP screen; both platforms in parallel. <b>Option A isn't available today</b> — Cimulate has no rendering SDK yet (it's the target end-state) — so the launch decision is <b>B vs. C</b>. The MIAW Mobile SDK is transport-only and doesn't change that (see §2.3).</p>
-    </section>
-
-    <section id="p1-table">
-      <h2><span class="num">2.2</span> Side-by-side comparison</h2>
-      <table>
-        <tr>
-          <th class="c1">Dimension</th>
-          <th style="opacity:.6">A · Cimulate SDK <span style="font-weight:400;font-size:11px">(not yet available)</span></th>
-          <th>B · Net-new on SCRT2</th>
-          <th>C · WebView wrap</th>
-        </tr>
-        <tr class="rowbest">
-          <td class="dim1">Time to showcase</td>
-          <td class="n">Not available</td><td class="n">Slowest (~6–8 wks)</td><td class="y">Fastest (~2 wks)</td>
-        </tr>
-        <tr>
-          <td class="dim1">Who renders carousels &amp; chips</td>
-          <td>—</td><td>We do (native, from scratch)</td><td>Cimulate web widget (in WebView)</td>
-        </tr>
-        <tr>
-          <td class="dim1">Rich-reply engineering on us</td>
-          <td>—</td><td class="n">High — reverse-engineer payload</td><td class="y">None</td>
-        </tr>
-        <tr>
-          <td class="dim1">Native look &amp; feel</td>
-          <td>—</td><td class="y">Highest</td><td class="m">Good — full-screen + themed</td>
-        </tr>
-        <tr>
-          <td class="dim1">Transport</td>
-          <td>—</td><td>MIAW Mobile SDK</td><td>Web widget (SCRT2 under the hood)</td>
-        </tr>
-        <tr>
-          <td class="dim1">Runtime dependencies</td>
-          <td>—</td><td class="y">None (native + SCRT2)</td><td>CDN bundle + WebView</td>
-        </tr>
-        <tr>
-          <td class="dim1">Maintenance as agent evolves</td>
-          <td>—</td><td class="n">Ours — track payload changes</td><td class="y">Auto — widget updates on CDN</td>
-        </tr>
-        <tr>
-          <td class="dim1">Product tap → native PDP</td>
-          <td>—</td><td class="y">Native by default</td><td>URL/event interception bridge</td>
-        </tr>
-        <tr>
-          <td class="dim1">Cart / checkout later</td>
-          <td>—</td><td class="y">Full control</td><td>Add session-token bridge (SFRA prechat)</td>
-        </tr>
-        <tr>
-          <td class="dim1">Key risk</td>
-          <td class="m">Doesn't exist yet — vendor roadmap</td><td class="n">Undocumented payload we don't control</td><td class="m">WebView polish + tap contract</td>
-        </tr>
-        <tr class="rowbest">
-          <td class="dim1">Best when…</td>
-          <td>Cimulate ships a rendering SDK (target end-state)</td><td>Fully-native UX is a hard requirement</td><td>You want a fast, faithful launch now</td>
-        </tr>
-      </table>
-      <p class="legend"><span class="y">green</span> = advantage &nbsp;·&nbsp; <span class="m">amber</span> = caveat / conditional &nbsp;·&nbsp; <span class="n">red</span> = disadvantage.</p>
-    </section>
-
-    <section id="p1-why">
-      <h2><span class="num">2.3</span> Why the renderer question decides everything</h2>
-      <div class="note">
-        The shopper agent's <b>carousels and chips are drawn by Cimulate's closed <code>copilot-widget</code> bundle</b> — that rendering code is web-only and not something we have. This single fact separates the two options available today:
-        <ul style="margin:10px 0 0;">
-          <li><b>C reuses Cimulate's renderer</b> by hosting the web widget in a WebView → no rich-reply work for us.</li>
-          <li><b>B rebuilds the renderer natively</b> against a payload we'd have to reverse-engineer and then own → the most expensive path, with the most ongoing risk.</li>
-        </ul>
-        So for launch, the fast/safe path is the one that <em>doesn't</em> rebuild what Cimulate already ships.
-      </div>
-
-      <h3>"There's a mobile SDK" — which one? Rendering is the expensive part</h3>
-      <p>It's easy to hear <em>"Salesforce has a mobile SDK"</em> and assume the WebView is unnecessary. It isn't — because the SDK that exists today solves the <b>wrong half</b> of the problem. There are two very different "SDK" ideas, and only one of them removes the hard work:</p>
+    <section id="why-webview">
+      <h2><span class="num">◆</span> Why a WebView</h2>
+      <p>Rendering the agent's rich replies is the expensive part of this problem — and that renderer exists only as a web bundle today. A native "messaging SDK" does exist, but it solves the <em>wrong half</em>: it moves messages, it doesn't draw carousels. So the fast, faithful way to launch is to reuse Cimulate's real renderer inside a WebView rather than rebuild it natively against an undocumented payload we'd then have to maintain.</p>
       <table>
         <tr>
           <th class="c1">"SDK"</th>
@@ -342,32 +213,22 @@ MVP — discovery + authenticated context &amp; loyalty actions. No cart / check
         <tr>
           <td class="dim1">MIAW Mobile SDK <span style="font-weight:400;font-size:11px">(exists today)</span></td>
           <td><b>Transport only</b> — SCRT2 connection, send/receive messages, push registration.</td>
-          <td class="n">No rendering. You still build every carousel &amp; chip natively (that's Option B).</td>
+          <td class="n">No rendering. You would still build every carousel &amp; chip natively.</td>
         </tr>
         <tr class="rowbest">
-          <td class="dim1">Cimulate shopper-agent SDK <span style="font-weight:400;font-size:11px">(not yet available)</span></td>
-          <td class="y"><b>Transport + native rendering</b> of Cimulate's rich replies — the real "better solution".</td>
-          <td class="m">Doesn't exist yet — depends on Cimulate's roadmap (Option A, the target end-state).</td>
+          <td class="dim1">Cimulate rendering SDK <span style="font-weight:400;font-size:11px">(not yet available)</span></td>
+          <td class="y"><b>Transport + native rendering</b> of Cimulate's rich replies — the eventual native path.</td>
+          <td class="m">Doesn't exist yet — depends on Cimulate's roadmap.</td>
         </tr>
       </table>
-      <div class="note">Because <b>rendering is the expensive part</b>, the MIAW SDK being available doesn't move the needle — it's the pipe, not the UI. The choice today is: reuse Cimulate's real renderer in a WebView (<b>C</b>), or rebuild it natively on top of the MIAW transport SDK (<b>B</b>). Either way, the <b>Titan mobile team builds and owns the app</b>; the difference is only <em>what they build against</em>. When Cimulate ships a rendering SDK, that becomes the better long-term foundation — and nothing in C is throwaway.</div>
-    </section>
+      <div class="note">Because <b>rendering is the expensive part</b>, the transport-only SDK doesn't remove the hard work — it's the pipe, not the UI. Until a native rendering SDK ships, hosting Cimulate's existing web widget in a WebView is the only way to get the real carousels and chips without rebuilding and maintaining a renderer ourselves. <b>This guide is that integration.</b></div>
+      <div class="ok"><b>Not throwaway.</b> When Cimulate ships a native rendering SDK, migrate to it for a fully-native experience — the native shell, the "Ask Nishka" entry point, product-tap interception (§7), JWT verification (§10), and the push / resume plumbing (§11) all carry over unchanged.</div>
 
-    <section id="p1-rec">
-      <h2><span class="num">2.4</span> Recommendation</h2>
-      <div class="rec-box">
-        <p style="margin:0 0 8px;">With <b>Option A not available today</b> (Cimulate has no rendering SDK yet) and the <b>MIAW SDK being transport-only</b>, the choice for launch is between rebuilding the renderer ourselves (B) or reusing Cimulate's web renderer (C).</p>
-        <p style="margin:0 0 8px;"><b>Go with Option C (WebView wrap) to hit the launch date.</b> It reuses Cimulate's real carousel/chip rendering and looks native when presented full-screen + themed with product taps routed to the native PDP. <b>Part 3 below is the developer guide for this path.</b></p>
-        <p style="margin:0 0 8px;"><b>In parallel, push Cimulate for a shopper-agent (rendering) SDK — Option A, the target end-state.</b> When it ships, migrate to it for a fully-native experience; the native shell, entry point, PDP interception, JWT verification, and push/resume plumbing from C all carry over.</p>
-        <p style="margin:0;"><b>Reserve Option B</b> for if/when fully-native rendering becomes a hard requirement before an SDK exists — it's the biggest build and the only one where we own an undocumented payload as the agent's replies evolve.</p>
-      </div>
-      <div class="note"><b>Full end-to-end scope stands</b> — discovery, authenticated loyalty (§10), escalation to a live agent (§11), and case creation. <b>Discovery ships now</b> (~2 wks both platforms). Per the mobile config review (17 Aug), the authenticated-identity lookups and <em>async</em> escalation resume depend on <b>two Salesforce-side capabilities not yet in the widget release</b> — verified user identity, then durable conversation resume (§14 items 1 &amp; 2) — so sequence dates around those, not around the app build. In-session handoff and hidden pre-chat context work today. Consider <b>B</b> only if native fidelity later demands it — nothing here is throwaway.</div>
-
-      <h3>Proposed phasing</h3>
+      <h3>Scope &amp; phasing</h3>
       <p>The full experience ships in phases. Discovery is deliverable now; the authenticated and async-escalation phases gate on Salesforce-side capabilities (§10, §11), not on the app build.</p>
       <table>
         <tr><th class="c1">Phase</th><th>Scope</th><th>Status</th></tr>
-        <tr class="rowbest"><td class="dim1">1 · Discovery</td><td>Guest search, recommendations, carousels, chips, native PDP interception, theming, full-screen presentation</td><td class="y"><b>Deliverable now</b> — ~2 wks both platforms, with the §3 / §4 config revisions</td></tr>
+        <tr class="rowbest"><td class="dim1">1 · Discovery</td><td>Guest search, recommendations, carousels, chips, native PDP interception, theming, full-screen presentation</td><td class="y"><b>Deliverable now</b> — ~2 wks both platforms, with the §3 / §4 config</td></tr>
         <tr><td class="dim1">2 · Authenticated context &amp; loyalty</td><td>Verified identity, personalised greeting, digigold / order / tier lookups</td><td class="m"><b>Blocked</b> on Salesforce delivery of verified-identity support (§10, §14 item 1). App-side prerequisites (JWT minting, deployment config) proceed in parallel</td></tr>
         <tr><td class="dim1">3 · Escalation with async replies</td><td>Push notification, deep link, resume into the same conversation after a cold start</td><td class="m"><b>Blocked</b> on durable conversation resume (§11, §14 item 2), expected to follow Phase 2. In-session handoff works today</td></tr>
         <tr><td class="dim1">4 · Case creation</td><td>Agent-created cases, native "My Requests" deep link</td><td>Largely agent configuration. In-chat file attachments are not supported today (§14 item 6), so photo-attachment use cases are out of scope for now</td></tr>
@@ -379,9 +240,9 @@ MVP — discovery + authenticated context &amp; loyalty actions. No cart / check
 
     <!-- ================= PART 3 — DEVELOPER GUIDE ================= -->
     <div class="part-banner">
-      <div class="kicker">Part 3 — Developer Guide (Option C)</div>
+      <div class="kicker">Developer Guide</div>
       <h1>Embedding Nishka in the Tanishq apps via WebView</h1>
-      <p>Step-by-step integration for iOS &amp; Android developers — the detail behind the Part 1 journey.</p>
+      <p>Step-by-step integration for iOS &amp; Android developers — the detail behind the journey above.</p>
       <div class="meta">
         <span class="pill"><b>Scope:</b>&nbsp;Discovery · authenticated loyalty actions · escalation to a human agent · case creation</span>
         <span class="pill"><b>Out of scope:</b>&nbsp;cart &amp; checkout</span>
@@ -735,7 +596,7 @@ Native app intercepts / assists:
         <li><b>Native skeleton during load.</b> Show a native splash/skeleton for the ~1–2 s window. The native frame is already on screen, so perceived latency stays low.</li>
         <li><b>Keep the instance alive.</b> Don't destroy the WebView on back — retain the VC/fragment (§7) so re-opening is instant and conversation state survives.</li>
       </ul>
-      <div class="note"><b>Bottom line:</b> the cold-start CDN fetch is the only WebView-specific latency, and static-mode + pre-warming largely neutralize it. Steady-state rendering is a non-issue, and the dominant agent-response latency is identical across all three options in Part 1.</div>
+      <div class="note"><b>Bottom line:</b> the cold-start CDN fetch is the only WebView-specific latency, and static-mode + pre-warming largely neutralize it. Steady-state rendering is a non-issue, and the dominant agent-response latency is identical whether Nishka runs in a WebView or a fully native shell.</div>
     </section>
 
     <section id="g10">
@@ -912,7 +773,7 @@ cc.addUserScript(WKUserScript(source: js, injectionTime: .atDocumentStart, forMa
         <tr><td>4</td><td>Published mobile/native reference host page &amp; config guide</td><td><b>Salesforce</b></td><td>Documentation gap; this doc is the interim substitute.</td></tr>
         <tr><td>5</td><td>Pinned widget version + locally-bundled copy if CDN can't be allowlisted</td><td><b>Salesforce</b></td><td>Salesforce nominates a version and provides the artifact (§4, §12).</td></tr>
         <tr><td>6</td><td>In-chat file attachments</td><td><b>Salesforce</b></td><td>Not currently supported; roadmap. Affects the case-creation flow only (§11).</td></tr>
-        <tr><td>7</td><td>Native rendering SDK roadmap (Option A)</td><td><b>Salesforce</b></td><td>Nothing in Option C is throwaway if it later ships. Timing separately.</td></tr>
+        <tr><td>7</td><td>Native rendering SDK roadmap</td><td><b>Salesforce</b></td><td>The eventual native path. Nothing in the WebView integration is throwaway if it later ships; timing to follow separately.</td></tr>
         <tr><td>8</td><td><b>Host page over a custom scheme handler</b> (replaces <code>file://</code>)</td><td><b>Tanishq</b></td><td>§5/§6. Mandatory.</td></tr>
         <tr><td>9</td><td>Product URL parser + native PDP route</td><td><b>Tanishq</b></td><td>URL scheme is the storefront's; validate against a real tap (§7).</td></tr>
         <tr><td>10</td><td>Safe-area insets &amp; keyboard handling</td><td><b>Tanishq</b></td><td>Native-side, both platforms (§8, §13).</td></tr>
