@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Nishka on Mobile — Approach &amp; WebView Integration Guide</title>
+<style>
+  :root{
+    --maroon:#7a1e2b;--maroon-dark:#5c1621;--gold:#b8860b;--gold-soft:#d4af37;
+    --ink:#1f2328;--muted:#57606a;--line:#e6ddd2;--bg:#faf7f2;--panel:#fff;
+    --code-bg:#1c1917;--code-ink:#e7ded2;--code-key:#d4a04a;--code-str:#9fe6b4;--code-com:#8a7f70;
+    --ok:#3d7d59;--warn:#b3541e;--bad:#a4303f;
+    --sidebar:310px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink);background:var(--bg);line-height:1.6;font-size:15px;}
+
+  /* layout */
+  .wrap{display:flex;align-items:flex-start;}
+  nav.toc{position:sticky;top:0;height:100vh;width:var(--sidebar);flex:0 0 var(--sidebar);
+    background:linear-gradient(170deg,var(--maroon),var(--maroon-dark));color:#f3e9dc;padding:26px 20px;overflow-y:auto;}
+  nav.toc .brand{font-family:Georgia,"Times New Roman",serif;font-size:20px;letter-spacing:.14em;color:#fff;margin:0 0 4px;}
+  nav.toc .brandsub{font-size:12px;color:var(--gold-soft);letter-spacing:.04em;margin-bottom:20px;}
+  nav.toc .part{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-soft);margin:18px 0 6px;padding-left:10px;font-weight:700;}
+  nav.toc ul{list-style:none;margin:0;padding:0;}
+  nav.toc li{margin:0;}
+  nav.toc a{display:block;color:#f0e4d4;text-decoration:none;font-size:13.5px;padding:7px 10px;border-radius:7px;
+    border-left:3px solid transparent;transition:background .15s,border-color .15s;}
+  nav.toc a .n{color:var(--gold-soft);font-weight:600;margin-right:5px;}
+  nav.toc a:hover{background:rgba(255,255,255,.09);}
+  nav.toc a.active{background:rgba(255,255,255,.14);border-left-color:var(--gold-soft);color:#fff;}
+  nav.toc .foot{margin-top:22px;padding-top:16px;border-top:1px solid rgba(255,255,255,.16);font-size:11.5px;color:#cbb9a6;line-height:1.5;}
+
+  main{flex:1;min-width:0;max-width:940px;margin:0 auto;padding:0 48px 100px;}
+
+  /* part banners */
+  .part-banner{background:linear-gradient(160deg,var(--maroon),var(--maroon-dark));color:#fff;
+    margin:0 -48px 34px;padding:40px 48px 30px;}
+  .part-banner.first{margin-top:0;}
+  .part-banner .brand{font-family:Georgia,serif;font-size:16px;letter-spacing:.16em;color:var(--gold-soft);margin-bottom:8px;}
+  .part-banner .kicker{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-soft);margin-bottom:6px;}
+  .part-banner h1{font-family:Georgia,serif;font-size:29px;margin:0 0 8px;line-height:1.2;}
+  .part-banner p{margin:0;font-size:15.5px;color:#f0e4d4;max-width:840px;}
+  .meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;}
+  .meta .pill{font-size:12px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);border-radius:20px;padding:5px 12px;color:#f3e9dc;}
+  .meta .pill b{color:#fff;font-weight:600;}
+
+  section{margin-bottom:44px;scroll-margin-top:16px;}
+  h2{font-size:22px;color:var(--maroon);border-bottom:1px solid var(--line);padding-bottom:8px;margin:44px 0 18px;
+    display:flex;align-items:baseline;gap:10px;}
+  h2:first-child{margin-top:0;}
+  h2 .num{font-size:15px;color:var(--gold);font-weight:700;font-family:Georgia,serif;}
+  h3{font-size:16.5px;color:var(--ink);margin:26px 0 10px;}
+  p{margin:0 0 14px;}
+  a{color:var(--maroon);}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.88em;
+    background:#f1e9dd;color:#7a3312;padding:1.5px 6px;border-radius:5px;}
+
+  /* code blocks */
+  pre{background:var(--code-bg);color:var(--code-ink);border-radius:12px;padding:18px 20px;overflow-x:auto;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;line-height:1.6;margin:0 0 18px;
+    box-shadow:0 3px 14px rgba(92,22,33,.12);position:relative;}
+  pre code{background:none;color:inherit;padding:0;font-size:inherit;}
+  pre .lang{position:absolute;top:0;right:0;background:rgba(255,255,255,.08);color:#c9bda9;font-size:10.5px;
+    letter-spacing:.08em;text-transform:uppercase;padding:4px 10px;border-radius:0 12px 0 10px;}
+  .k{color:var(--code-key);} .s{color:var(--code-str);} .c{color:var(--code-com);font-style:italic;} .fn{color:#7bc4e8;}
+
+  /* tables */
+  table{width:100%;border-collapse:collapse;margin:8px 0 18px;font-size:13.5px;background:#fff;border-radius:10px;overflow:hidden;
+    box-shadow:0 2px 10px rgba(92,22,33,.06);}
+  th{background:var(--maroon);color:#fff;text-align:left;padding:10px 13px;font-weight:600;font-size:12.5px;letter-spacing:.02em;}
+  th.c1{width:26%;}
+  td{padding:10px 13px;border-top:1px solid var(--line);vertical-align:top;}
+  tr:nth-child(even) td{background:#fdfbf8;}
+  td code{white-space:nowrap;}
+  td.dim1{font-weight:600;color:var(--ink);background:#f6efe6 !important;}
+  .y{color:var(--ok);font-weight:600;} .n{color:var(--bad);font-weight:600;} .m{color:var(--warn);font-weight:600;}
+  .rowbest{box-shadow:inset 3px 0 0 var(--gold-soft);}
+
+  /* option cards */
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:10px;}
+  .card{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 3px 14px rgba(92,22,33,.07);display:flex;flex-direction:column;}
+  .card .top{padding:16px 18px;color:#fff;}
+  .card.a .top{background:#5b6b7a;} .card.b .top{background:#8a4b52;} .card.c .top{background:linear-gradient(135deg,var(--maroon),var(--maroon-dark));}
+  .card .top .opt{font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.85;}
+  .card .top .name{font-size:18px;font-weight:700;font-family:Georgia,serif;margin-top:3px;}
+  .card .top .one{font-size:12.5px;opacity:.92;margin-top:5px;line-height:1.4;}
+  .badge-rec{display:inline-block;background:var(--gold-soft);color:#3a1109;font-size:10.5px;font-weight:700;letter-spacing:.06em;padding:3px 9px;border-radius:20px;margin-top:8px;}
+  .badge-out{display:inline-block;background:#e4dcd0;color:#6b6156;font-size:10.5px;font-weight:700;letter-spacing:.06em;padding:3px 9px;border-radius:20px;margin-top:8px;}
+  .card.out{opacity:.62;filter:grayscale(.4);} .card.out .top{background:#8a8178 !important;}
+  .card .body{padding:15px 18px;flex:1;display:flex;flex-direction:column;gap:12px;}
+  .card .metric{display:flex;justify-content:space-between;font-size:13px;border-bottom:1px dashed var(--line);padding-bottom:8px;}
+  .card .metric b{color:var(--ink);} .card .metric span{color:var(--muted);text-align:right;}
+  .card h4{margin:4px 0 4px;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--gold);}
+  .card ul{margin:0;padding-left:16px;font-size:13px;color:var(--ink);}
+  .card ul li{margin-bottom:4px;} .card ul.con li{color:#8a4a52;}
+  .est{font-size:15px;font-weight:700;color:var(--maroon);}
+  .legend{font-size:12.5px;color:var(--muted);margin-top:-4px;}
+
+  /* callouts */
+  .note{border-left:4px solid var(--gold);background:#fdf6e9;padding:13px 16px;border-radius:0 9px 9px 0;margin:0 0 18px;font-size:14px;}
+  .warn{border-left:4px solid var(--warn);background:#fdefe6;padding:13px 16px;border-radius:0 9px 9px 0;margin:0 0 18px;font-size:14px;}
+  .ok{border-left:4px solid var(--ok);background:#eef7f1;padding:13px 16px;border-radius:0 9px 9px 0;margin:0 0 18px;font-size:14px;}
+  .rec-box{border-left:4px solid var(--ok);background:#eef7f1;padding:16px 18px;border-radius:0 10px 10px 0;margin:12px 0 8px;}
+  .note b,.warn b,.ok b,.rec-box b{color:var(--ink);}
+
+  ul.check{list-style:none;padding:0;margin:0 0 18px;}
+  ul.check li{padding:7px 0 7px 30px;position:relative;border-bottom:1px dashed var(--line);font-size:14px;}
+  ul.check li::before{content:"☐";position:absolute;left:6px;color:var(--maroon);font-size:16px;}
+
+  ol.steps,ul.bul{padding-left:22px;margin:0 0 16px;}
+  ol.steps li,ul.bul li{margin-bottom:8px;}
+
+  .flow{background:var(--code-bg);color:var(--code-ink);border-radius:12px;padding:20px;font-family:ui-monospace,Menlo,monospace;
+    font-size:12.5px;line-height:1.7;overflow-x:auto;margin:0 0 18px;white-space:pre;}
+  .flow .hl{color:var(--gold-soft);}
+
+  hr.part-rule{border:none;border-top:3px double var(--gold-soft);margin:10px 0 0;}
+
+  .journey-frame{border-radius:14px;overflow:hidden;box-shadow:0 6px 22px rgba(92,22,33,.18);border:1px solid var(--line);background:#2b2b2b;margin:6px 0 4px;}
+  .journey-frame iframe{display:block;width:100%;height:4900px;border:0;}
+  #g-journey h2 .num{font-size:18px;}
+  @media (max-width:960px){ .journey-frame iframe{height:9200px;} }
+
+  @media print{
+    nav.toc{display:none;} main{max-width:none;padding:0;}
+    pre,table{box-shadow:none;} body{font-size:12px;}
+    .part-banner{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  }
+  @media (max-width:960px){
+    nav.toc{display:none;} main{padding:0 20px 80px;}
+    .part-banner{margin:0 -20px 28px;padding:30px 20px 24px;}
+    .cards{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <nav class="toc">
+    <div class="brand">TANISHQ</div>
+    <div class="brandsub">Nishka · Mobile Integration</div>
+
+    <div class="part">Part 1 · Shopper Journey</div>
+    <ul>
+      <li><a href="#g-journey"><span class="n">★</span>End-to-end journey</a></li>
+    </ul>
+
+    <div class="part">Part 2 · Approach</div>
+    <ul>
+      <li><a href="#p1-glance"><span class="n">2.1</span>Options at a glance</a></li>
+      <li><a href="#p1-table"><span class="n">2.2</span>Side-by-side comparison</a></li>
+      <li><a href="#p1-why"><span class="n">2.3</span>Why the renderer decides it</a></li>
+      <li><a href="#p1-rec"><span class="n">2.4</span>Recommendation</a></li>
+    </ul>
+
+    <div class="part">Part 3 · WebView Guide</div>
+    <ul>
+      <li><a href="#g1"><span class="n">1</span>How it works</a></li>
+      <li><a href="#g2"><span class="n">2</span>Prerequisites</a></li>
+      <li><a href="#g3"><span class="n">3</span>Config values</a></li>
+      <li><a href="#g4"><span class="n">4</span>Widget host HTML</a></li>
+      <li><a href="#g5"><span class="n">5</span>WebView host — iOS</a></li>
+      <li><a href="#g6"><span class="n">6</span>WebView host — Android</a></li>
+      <li><a href="#g7"><span class="n">7</span>Intercept product taps</a></li>
+      <li><a href="#g8"><span class="n">8</span>Make it feel native</a></li>
+      <li><a href="#g9"><span class="n">9</span>Performance &amp; latency</a></li>
+      <li><a href="#g10"><span class="n">10</span>Authenticated context &amp; pre-chat</a></li>
+      <li><a href="#g11"><span class="n">11</span>Case creation &amp; escalation</a></li>
+      <li><a href="#g12"><span class="n">12</span>Network / CSP / ATS</a></li>
+      <li><a href="#g13"><span class="n">13</span>Testing checklist</a></li>
+      <li><a href="#g14"><span class="n">14</span>Questions for Cimulate &amp; admin</a></li>
+      <li><a href="#g15"><span class="n">15</span>Config reference</a></li>
+    </ul>
+    <div class="foot">
+MVP — discovery + authenticated context &amp; loyalty actions. No cart / checkout.<br><br>
+      Grounded in the <code style="color:#e6c98a">plugin_commerce_client</code> SFRA cartridge.
+    </div>
+  </nav>
+
+  <main>
+
+    <!-- ================= PART 1 — SHOPPER JOURNEY ================= -->
+    <div class="part-banner first">
+      <div class="brand">TANISHQ · NISHKA</div>
+      <div class="kicker">Part 1 — Shopper Journey</div>
+      <h1>What the shopper experiences, end to end</h1>
+      <p>Start with the experience we're building toward. A signed-in shopper opens Nishka, gets a welcome menu, is guided through a product search, taps into a native PDP, checks their digigold balance, and can escalate to a live agent. Parts 2 &amp; 3 explain how we deliver it.</p>
+    </div>
+
+    <section id="g-journey">
+      <h2><span class="num">★</span> End-to-end shopper journey</h2>
+      <p>The whole experience a signed-in shopper sees — from login, through Nishka's welcome menu and a guided product search, to a native PDP, a digigold balance keyed on the verified identity, and escalation to a live agent. Colour tells you what's <b>WebView</b> (chat, buttons, carousel, balance, handoff) vs. <b>native</b> (login, home, PDP); each step is mapped to the Part 3 section that implements it.</p>
+      <div class="journey-frame">
+        <iframe src="mockups/nishka-end-to-end-flow.html" title="Nishka end-to-end shopper journey" loading="lazy"></iframe>
+      </div>
+      <p class="legend" style="margin-top:10px;">Full-size interactive version: <a href="mockups/nishka-end-to-end-flow.html" target="_blank">open the shopper-journey mockup in a new tab ↗</a>. Part 2 weighs the three ways to build this; Part 3 (§1–§11) is the developer-facing detail behind the flow.</p>
+    </section>
+
+    <hr class="part-rule" />
+
+    <!-- ================= PART 2 — APPROACH ================= -->
+    <div class="part-banner">
+      <div class="kicker">Part 2 — Approach</div>
+      <h1>Bringing Nishka to the native mobile apps — three ways</h1>
+      <p>The Tanishq iOS &amp; Android apps talk to the shopper agent over Salesforce SCRT2 messaging. There are three ways to get there. All reach the same agent; they differ in who renders the rich replies (carousels &amp; chips), how native it feels, and how much we build.</p>
+    </div>
+
+    <section id="p1-glance">
+      <h2><span class="num">2.1</span> The three options at a glance</h2>
+      <div class="cards">
+        <div class="card a out">
+          <div class="top">
+            <div class="opt">Option A</div>
+            <div class="name">Cimulate shopper-agent SDK</div>
+            <div class="one">A native iOS/Android SDK from Cimulate that <b>renders</b> its own carousels &amp; chips — transport <em>and</em> UI.</div>
+            <div><span class="badge-out">◇ TARGET END-STATE — no SDK today</span></div>
+          </div>
+          <div class="body">
+            <div class="metric"><b>Effort</b><span class="est">Least (when it exists)</span></div>
+            <div class="metric"><b>Native feel</b><span>Highest (native, vendor-owned)</span></div>
+            <div class="metric"><b>We build renderers?</b><span>No — Cimulate does</span></div>
+            <h4>Status</h4>
+            <ul class="con"><li><b>Cimulate has no mobile SDK today.</b></li><li>This is the <b>better long-term solution</b> — fully native rendering, no WebView caveats.</li><li>Push it onto Cimulate's roadmap; migrate when it ships. Nothing in C is throwaway.</li></ul>
+          </div>
+        </div>
+        <div class="card b">
+          <div class="top">
+            <div class="opt">Option B</div>
+            <div class="name">Net-new native build on SCRT2</div>
+            <div class="one">Use the MIAW Mobile SDK — <b>transport only</b> — and build our own native carousel/chip renderers from scratch.</div>
+          </div>
+          <div class="body">
+            <div class="metric"><b>Effort</b><span class="est">~6–8 weeks (both)</span></div>
+            <div class="metric"><b>Native feel</b><span>Highest (fully native)</span></div>
+            <div class="metric"><b>We build renderers?</b><span>Yes — from scratch</span></div>
+            <h4>Pros</h4>
+            <ul><li>Fully native UX, full design control</li><li>No CDN/WebView dependency</li><li>Deep native actions are natural</li></ul>
+            <h4>Cons</h4>
+            <ul class="con"><li><b>MIAW SDK is the pipe, not the UI</b> — it delivers payloads, renders nothing</li><li>Reverse-engineer &amp; rebuild Cimulate's closed renderer against an undocumented payload</li><li>We own it as the agent's replies evolve</li></ul>
+          </div>
+        </div>
+        <div class="card c">
+          <div class="top">
+            <div class="opt">Option C</div>
+            <div class="name">WebView wrap</div>
+            <div class="one">Host Cimulate's existing web widget in a native full-screen WebView; intercept product taps to native.</div>
+            <div><span class="badge-rec">★ RECOMMENDED</span></div>
+          </div>
+          <div class="body">
+            <div class="metric"><b>Effort</b><span class="est">~2 weeks (both)</span></div>
+            <div class="metric"><b>Native feel</b><span>Good (if full-screen + themed)</span></div>
+            <div class="metric"><b>We build renderers?</b><span>No — reuse the web widget</span></div>
+            <h4>Pros</h4>
+            <ul><li>Reuses Cimulate's real renderer — zero rich-reply work</li><li>Fastest to a working showcase</li><li>Auto-inherits widget upgrades</li></ul>
+            <h4>Cons</h4>
+            <ul class="con"><li>Not 100% native (scroll/font/keyboard tells)</li><li>Runtime CDN + WebView dependency</li><li>Product taps need a native interception bridge</li></ul>
+          </div>
+        </div>
+      </div>
+      <p class="legend">Effort assumes existing native apps and an existing PDP screen; both platforms in parallel. <b>Option A isn't available today</b> — Cimulate has no rendering SDK yet (it's the target end-state) — so the launch decision is <b>B vs. C</b>. The MIAW Mobile SDK is transport-only and doesn't change that (see §2.3).</p>
+    </section>
+
+    <section id="p1-table">
+      <h2><span class="num">2.2</span> Side-by-side comparison</h2>
+      <table>
+        <tr>
+          <th class="c1">Dimension</th>
+          <th style="opacity:.6">A · Cimulate SDK <span style="font-weight:400;font-size:11px">(not yet available)</span></th>
+          <th>B · Net-new on SCRT2</th>
+          <th>C · WebView wrap</th>
+        </tr>
+        <tr class="rowbest">
+          <td class="dim1">Time to showcase</td>
+          <td class="n">Not available</td><td class="n">Slowest (~6–8 wks)</td><td class="y">Fastest (~2 wks)</td>
+        </tr>
+        <tr>
+          <td class="dim1">Who renders carousels &amp; chips</td>
+          <td>—</td><td>We do (native, from scratch)</td><td>Cimulate web widget (in WebView)</td>
+        </tr>
+        <tr>
+          <td class="dim1">Rich-reply engineering on us</td>
+          <td>—</td><td class="n">High — reverse-engineer payload</td><td class="y">None</td>
+        </tr>
+        <tr>
+          <td class="dim1">Native look &amp; feel</td>
+          <td>—</td><td class="y">Highest</td><td class="m">Good — full-screen + themed</td>
+        </tr>
+        <tr>
+          <td class="dim1">Transport</td>
+          <td>—</td><td>MIAW Mobile SDK</td><td>Web widget (SCRT2 under the hood)</td>
+        </tr>
+        <tr>
+          <td class="dim1">Runtime dependencies</td>
+          <td>—</td><td class="y">None (native + SCRT2)</td><td>CDN bundle + WebView</td>
+        </tr>
+        <tr>
+          <td class="dim1">Maintenance as agent evolves</td>
+          <td>—</td><td class="n">Ours — track payload changes</td><td class="y">Auto — widget updates on CDN</td>
+        </tr>
+        <tr>
+          <td class="dim1">Product tap → native PDP</td>
+          <td>—</td><td class="y">Native by default</td><td>URL/event interception bridge</td>
+        </tr>
+        <tr>
+          <td class="dim1">Cart / checkout later</td>
+          <td>—</td><td class="y">Full control</td><td>Add session-token bridge (SFRA prechat)</td>
+        </tr>
+        <tr>
+          <td class="dim1">Key risk</td>
+          <td class="m">Doesn't exist yet — vendor roadmap</td><td class="n">Undocumented payload we don't control</td><td class="m">WebView polish + tap contract</td>
+        </tr>
+        <tr class="rowbest">
+          <td class="dim1">Best when…</td>
+          <td>Cimulate ships a rendering SDK (target end-state)</td><td>Fully-native UX is a hard requirement</td><td>You want a fast, faithful launch now</td>
+        </tr>
+      </table>
+      <p class="legend"><span class="y">green</span> = advantage &nbsp;·&nbsp; <span class="m">amber</span> = caveat / conditional &nbsp;·&nbsp; <span class="n">red</span> = disadvantage.</p>
+    </section>
+
+    <section id="p1-why">
+      <h2><span class="num">2.3</span> Why the renderer question decides everything</h2>
+      <div class="note">
+        The shopper agent's <b>carousels and chips are drawn by Cimulate's closed <code>copilot-widget</code> bundle</b> — that rendering code is web-only and not something we have. This single fact separates the two options available today:
+        <ul style="margin:10px 0 0;">
+          <li><b>C reuses Cimulate's renderer</b> by hosting the web widget in a WebView → no rich-reply work for us.</li>
+          <li><b>B rebuilds the renderer natively</b> against a payload we'd have to reverse-engineer and then own → the most expensive path, with the most ongoing risk.</li>
+        </ul>
+        So for launch, the fast/safe path is the one that <em>doesn't</em> rebuild what Cimulate already ships.
+      </div>
+
+      <h3>"There's a mobile SDK" — which one? Rendering is the expensive part</h3>
+      <p>It's easy to hear <em>"Salesforce has a mobile SDK"</em> and assume the WebView is unnecessary. It isn't — because the SDK that exists today solves the <b>wrong half</b> of the problem. There are two very different "SDK" ideas, and only one of them removes the hard work:</p>
+      <table>
+        <tr>
+          <th class="c1">"SDK"</th>
+          <th>What it gives you</th>
+          <th>What it does <em>not</em></th>
+        </tr>
+        <tr>
+          <td class="dim1">MIAW Mobile SDK <span style="font-weight:400;font-size:11px">(exists today)</span></td>
+          <td><b>Transport only</b> — SCRT2 connection, send/receive messages, push registration.</td>
+          <td class="n">No rendering. You still build every carousel &amp; chip natively (that's Option B).</td>
+        </tr>
+        <tr class="rowbest">
+          <td class="dim1">Cimulate shopper-agent SDK <span style="font-weight:400;font-size:11px">(not yet available)</span></td>
+          <td class="y"><b>Transport + native rendering</b> of Cimulate's rich replies — the real "better solution".</td>
+          <td class="m">Doesn't exist yet — depends on Cimulate's roadmap (Option A, the target end-state).</td>
+        </tr>
+      </table>
+      <div class="note">Because <b>rendering is the expensive part</b>, the MIAW SDK being available doesn't move the needle — it's the pipe, not the UI. The choice today is: reuse Cimulate's real renderer in a WebView (<b>C</b>), or rebuild it natively on top of the MIAW transport SDK (<b>B</b>). Either way, the <b>Titan mobile team builds and owns the app</b>; the difference is only <em>what they build against</em>. When Cimulate ships a rendering SDK, that becomes the better long-term foundation — and nothing in C is throwaway.</div>
+    </section>
+
+    <section id="p1-rec">
+      <h2><span class="num">2.4</span> Recommendation</h2>
+      <div class="rec-box">
+        <p style="margin:0 0 8px;">With <b>Option A not available today</b> (Cimulate has no rendering SDK yet) and the <b>MIAW SDK being transport-only</b>, the choice for launch is between rebuilding the renderer ourselves (B) or reusing Cimulate's web renderer (C).</p>
+        <p style="margin:0 0 8px;"><b>Go with Option C (WebView wrap) to hit the launch date.</b> It reuses Cimulate's real carousel/chip rendering and looks native when presented full-screen + themed with product taps routed to the native PDP. <b>Part 3 below is the developer guide for this path.</b></p>
+        <p style="margin:0 0 8px;"><b>In parallel, push Cimulate for a shopper-agent (rendering) SDK — Option A, the target end-state.</b> When it ships, migrate to it for a fully-native experience; the native shell, entry point, PDP interception, JWT verification, and push/resume plumbing from C all carry over.</p>
+        <p style="margin:0;"><b>Reserve Option B</b> for if/when fully-native rendering becomes a hard requirement before an SDK exists — it's the biggest build and the only one where we own an undocumented payload as the agent's replies evolve.</p>
+      </div>
+      <div class="note"><b>Full end-to-end scope stands</b> — discovery, authenticated loyalty (§10), escalation to a live agent (§11), and case creation. <b>Discovery ships now</b> (~2 wks both platforms). Per the mobile config review (17 Aug), the authenticated-identity lookups and <em>async</em> escalation resume depend on <b>two Salesforce-side capabilities not yet in the widget release</b> — verified user identity, then durable conversation resume (§14 items 1 &amp; 2) — so sequence dates around those, not around the app build. In-session handoff and hidden pre-chat context work today. Consider <b>B</b> only if native fidelity later demands it — nothing here is throwaway.</div>
+
+      <h3>Proposed phasing</h3>
+      <p>The full experience ships in phases. Discovery is deliverable now; the authenticated and async-escalation phases gate on Salesforce-side capabilities (§10, §11), not on the app build.</p>
+      <table>
+        <tr><th class="c1">Phase</th><th>Scope</th><th>Status</th></tr>
+        <tr class="rowbest"><td class="dim1">1 · Discovery</td><td>Guest search, recommendations, carousels, chips, native PDP interception, theming, full-screen presentation</td><td class="y"><b>Deliverable now</b> — ~2 wks both platforms, with the §3 / §4 config revisions</td></tr>
+        <tr><td class="dim1">2 · Authenticated context &amp; loyalty</td><td>Verified identity, personalised greeting, digigold / order / tier lookups</td><td class="m"><b>Blocked</b> on Salesforce delivery of verified-identity support (§10, §14 item 1). App-side prerequisites (JWT minting, deployment config) proceed in parallel</td></tr>
+        <tr><td class="dim1">3 · Escalation with async replies</td><td>Push notification, deep link, resume into the same conversation after a cold start</td><td class="m"><b>Blocked</b> on durable conversation resume (§11, §14 item 2), expected to follow Phase 2. In-session handoff works today</td></tr>
+        <tr><td class="dim1">4 · Case creation</td><td>Agent-created cases, native "My Requests" deep link</td><td>Largely agent configuration. In-chat file attachments are not supported today (§14 item 6), so photo-attachment use cases are out of scope for now</td></tr>
+      </table>
+      <p class="legend"><b>Do not</b> commit a launch date that folds Phases 2–3 into Phase 1 on the assumption they are configuration work — they gate on Salesforce-side capabilities, not the app build.</p>
+    </section>
+
+    <hr class="part-rule" />
+
+    <!-- ================= PART 3 — DEVELOPER GUIDE ================= -->
+    <div class="part-banner">
+      <div class="kicker">Part 3 — Developer Guide (Option C)</div>
+      <h1>Embedding Nishka in the Tanishq apps via WebView</h1>
+      <p>Step-by-step integration for iOS &amp; Android developers — the detail behind the Part 1 journey.</p>
+      <div class="meta">
+        <span class="pill"><b>Scope:</b>&nbsp;Discovery · authenticated loyalty actions · escalation to a human agent · case creation</span>
+        <span class="pill"><b>Out of scope:</b>&nbsp;cart &amp; checkout</span>
+        <span class="pill"><b>Approach:</b>&nbsp;host Cimulate <code style="color:#fff;background:rgba(255,255,255,.15)">copilot-widget</code> in a native WebView</span>
+      </div>
+      <p style="margin:14px 0 0;font-size:13.5px;color:#f0e4d4;">Full scope stands. <b>Discovery is deliverable now</b> (~2 wks). <b>Authenticated context/loyalty (§10) and async escalation resume (§11) depend on two Salesforce-side capabilities</b> not in the current widget release — verified identity, then durable resume (§14 items 1 &amp; 2). Every Tanishq-owned prerequisite runs in parallel, so those two are the only true gates. The WebView host is unchanged throughout.</p>
+    </div>
+
+    <section id="g1">
+      <h2><span class="num">01</span> How it works (architecture)</h2>
+      <div class="flow">Native app (iOS / Android)
+  └─ presents a full-screen WebView from an <span class="hl">"Ask Nishka"</span> entry point
+       └─ loads a tiny local HTML host page
+            └─ &lt;script&gt; loads  <span class="hl">messaging.umd.js</span>  from  cdn.search.cimulate.ai
+                 └─ calls  <span class="hl">CimulateMessaging.injectMessagingWidget(config)</span>
+                      └─ widget connects to SCRT2 (guest OR verified) → Agentforce (Nishka agent)
+                      └─ widget renders chat + product carousels + chips  (all inside the WebView)
+                      └─ agent actions: loyalty lookups · <span class="hl">create case</span> · <span class="hl">escalate to human</span>
+
+Native app intercepts / assists:
+  • product-URL taps in the WebView  →  cancel web nav  →  push native PDP
+  • signed-in session  →  routing attributes + <span class="hl">verified JWT</span>  (§10)
+  • conversation continues with a human after escalation; <span class="hl">push notifications</span> for async replies  (§11)</div>
+      <p>The widget is a <b>closed, self-contained web bundle owned by Cimulate</b>. It handles the SCRT2 connection, streaming, and <em>all</em> rich-reply rendering (carousels, chips). <b>You do not parse SCRT2 payloads or render carousels yourself.</b> Case creation and escalation are <b>agent/MIAW behaviours</b> — the widget already renders them; the native work is identity (§10), notifications, and lifecycle (§11), not new UI.</p>
+      <div class="note">Reference implementation (web/SFRA): the <code>plugin_commerce_client</code> cartridge, file <code>cartridge/templates/default/cimulate/messagingWidget.isml</code>. The host HTML in §4 is the mobile equivalent of that template; §10 adds the session/verification handshake this cartridge uses.</div>
+    </section>
+
+    <section id="g2">
+      <h2><span class="num">02</span> Prerequisites</h2>
+      <h3>Org / platform <span style="font-weight:400;font-size:13px;color:var(--muted)">(Salesforce admin / commerce team — confirm done)</span></h3>
+      <ol class="steps">
+        <li><b>Agentforce + Messaging (SCRT2) configured</b> in the core org, with an <b>Embedded Service Deployment</b> (Messaging for In-App/Web) whose channel routes to the <b>Nishka</b> agent (<code>Tanishq_Titan_Agent</code>).</li>
+        <li><b>MIAW user verification (signed JWT)</b> configured on the deployment (public key/cert + claim mapping) — the deployment-side prerequisite for the verified-identity lookups (§10). Can be stood up in parallel with the Salesforce widget-side work it pairs with (§14, items 1 &amp; 12). Guest mode covers discovery without it.</li>
+        <li><b>Agent actions:</b> loyalty API actions and an <b>escalation / transfer-to-agent</b> path (Omni-Channel + a queue of human agents) for §10/§11; a <b>Create Case</b> action for the case-creation flow (§11).</li>
+        <li><b>CDN access</b> to <code>https://cdn.search.cimulate.ai</code> from mobile clients (or use static-bundle mode — see §12).</li>
+      </ol>
+      <h3>App side</h3>
+      <ol class="steps" start="5">
+        <li>An existing <b>native PDP screen</b> with a route that accepts a product ID / SKU (for §7).</li>
+        <li>A place to launch the experience from (a tab or nav button — see §8).</li>
+        <li>A <b>custom-scheme asset handler</b> (<code>WKURLSchemeHandler</code> / <code>WebViewAssetLoader</code>) to serve the host page over a real origin — <b>not <code>file://</code></b> (§5/§6, mandatory).</li>
+        <li><b>Push notifications</b> wired up (APNs / FCM) and device registration via the messaging API for async human-agent replies after escalation (§11; §14 item 2).</li>
+      </ol>
+    </section>
+
+    <section id="g3">
+      <h2><span class="num">03</span> The config values you need</h2>
+      <p>Get these from the Salesforce admin (they come from the Embedded Service Deployment). Field names match the widget's <code>messagingConfig</code>:</p>
+      <table>
+        <tr><th>Widget field</th><th>What it is</th><th>Example</th><th>Required</th></tr>
+        <tr><td><code>scrt2Url</code></td><td>SCRT2 instance URL</td><td><code>https://xxxx.salesforce-scrt.com</code></td><td>✅</td></tr>
+        <tr><td><code>orgId</code></td><td>Salesforce Organization ID (18-char)</td><td><code>00Dxx0000000000EAA</code></td><td>✅</td></tr>
+        <tr><td><code>esDeveloperName</code></td><td>Embedded Service Deployment developer name</td><td><code>Tanishq_Messaging</code></td><td>✅</td></tr>
+        <tr><td><code>capabilitiesVersion</code></td><td>Agentforce capabilities version — <b>set <code>"65"</code> explicitly</b></td><td><code>65</code></td><td>✅ set it</td></tr>
+      </table>
+      <div class="warn"><b>Do not hardcode</b> these in the app binary. Serve them from your app's remote config / MDM / a small config endpoint so you can rotate per environment (dev/stage/prod) without an app release. The widget will not start without <code>scrt2Url</code>, <code>orgId</code>, and <code>esDeveloperName</code>.</div>
+      <div class="note"><b>Two corrections from the mobile config review (17 Aug 2026):</b>
+        <ul style="margin:8px 0 0;">
+          <li><b><code>capabilitiesVersion</code> is not optional in practice.</b> If omitted it defaults to the <b>release-248</b> capability level, not <code>"65"</code> (which is release 258). <b>Set it explicitly.</b> At least <code>"63"</code> is required for <b>action progress indicators</b> — the "working…" state that makes loyalty lookups (§10) feel responsive.</li>
+          <li><b><code>cdnVersion</code> is not a widget field — it's removed.</b> On the web storefront this was an input to the SFRA cartridge that <em>resolved which bundle to load</em>; the widget itself never receives it. In a native app the host page does that job directly: the <b>version segment in the <code>&lt;script src&gt;</code> URL is the pin</b>, and static mode is just pointing that tag at a locally-bundled copy (§12). There is no key to pass.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="g4">
+      <h2><span class="num">04</span> Step 1 — Build the widget host HTML</h2>
+      <p>This is the single asset both platforms load. Ship it in app assets and serve it over a <b>custom scheme handler</b> so it has a real <code>https://</code> origin (see §5/§6 — do <b>not</b> use <code>file://</code>). It presents the widget as a full-bleed <b>chat embed</b> that fills the native container.</p>
+      <div class="ok"><b>Use the chat embed, not the dialog.</b> Setting <code>componentConfig.type: "chat"</code> renders the widget as an <b>embed that fills its container and has no chat header or close button</b> — so the native app's nav is the only header, and there's no close control that could strand the shopper in an empty WebView. This replaces the old "full-height dialog + hide the launcher + reconcile a doubled header" approach: the dialog is a floating <em>panel</em> (full-height ≠ full-width, and its header always carries a close button that can't be suppressed). The embed sidesteps all of it. <span style="color:var(--muted)">(Resolves former open questions 2 &amp; 3, and the §8 doubled-header question.)</span></div>
+      <pre><span class="lang">html</span><code>&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+  &lt;meta charset="UTF-8" /&gt;
+  &lt;meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" /&gt;
+  &lt;style&gt;
+    html, body { margin:0; height:100%; background:#faf6f0; overflow:hidden; }
+    <span class="c">/* type:"chat" fills its container; the native app draws the header/nav. */</span>
+    #nishka-widget { position:fixed; inset:0; }
+  &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;div id="nishka-widget"&gt;&lt;/div&gt;
+
+  <span class="c">&lt;!-- Config is injected by the native host at document-start (see §5/§6).
+       The bundle VERSION is a segment in the script URL below — there is no cdnVersion field. --&gt;</span>
+  &lt;script&gt;
+    window.__NISHKA_CONFIG__ = window.__NISHKA_CONFIG__ || {
+      scrt2Url: <span class="s">"REPLACED_BY_HOST"</span>, orgId: <span class="s">"REPLACED_BY_HOST"</span>,
+      esDeveloperName: <span class="s">"REPLACED_BY_HOST"</span>,
+      capabilitiesVersion: <span class="s">"65"</span>,
+      logoUrl: <span class="s">"REPLACED_BY_HOST"</span>,
+      routingAttributes: {}          <span class="c">// non-sensitive context only when authenticated (§10)</span>
+    };
+  &lt;/script&gt;
+
+  &lt;script&gt;
+    (function () {
+      <span class="k">var</span> cfg = window.__NISHKA_CONFIG__;
+      <span class="k">var</span> s = document.createElement(<span class="s">'script'</span>);
+      <span class="c">// Version pinning IS this URL segment. Point it at a bundled copy for static mode (§12).</span>
+      s.src = <span class="s">'https://cdn.search.cimulate.ai/copilot-widget/1.23.0/messaging.umd.js'</span>;
+      s.async = <span class="k">true</span>;
+      s.onload = <span class="k">function</span> () {
+        <span class="k">var</span> mod = window.CimulateMessaging;
+        <span class="k">if</span> (!mod || !mod.injectMessagingWidget) { nativeLog(<span class="s">'ERROR: injectMessagingWidget missing'</span>); <span class="k">return</span>; }
+        mod.<span class="fn">injectMessagingWidget</span>({
+          elementId: <span class="s">"nishka-widget"</span>,
+          timeout: <span class="n">5000</span>,
+          componentConfig: {
+            type: <span class="s">"chat"</span>,               <span class="c">// full-bleed embed: no chat header, no close button</span>
+            isOpen: <span class="k">true</span>,
+            isMinimized: <span class="k">false</span>,
+            enableMinimize: <span class="k">false</span>          <span class="c">// no minimise control → no floating launcher to hide</span>
+          },
+          messagingConfig: {
+            scrt2Url: cfg.scrt2Url, orgId: cfg.orgId,
+            esDeveloperName: cfg.esDeveloperName,
+            capabilitiesVersion: cfg.capabilitiesVersion,   <span class="c">// set explicitly — see §3</span>
+            routingAttributes: cfg.routingAttributes || {}, <span class="c">// non-sensitive context (§10)</span>
+            enableEscalationToAgent: <span class="k">true</span>          <span class="c">// in-chat "talk to an agent" control (§11)</span>
+          },
+          headerConfig: {                        <span class="c">// brand header (most of the §8 header work)</span>
+            headerText: <span class="s">"Nishka"</span>,
+            logoUrl: cfg.logoUrl,
+            headerBackgroundColor: <span class="s">"#faf6f0"</span>,
+            headerTextColor: <span class="s">"#1a202c"</span>
+          },
+          theme: {                               <span class="c">// reaches carousel cards + chips, not just the frame</span>
+            primaryColor: <span class="s">"#8b1d3f"</span>,
+            fontFamily: <span class="s">"inherit"</span>,             <span class="c">// load a Tanishq font in this page BEFORE naming it here</span>
+            backgroundColor: <span class="s">"#ffffff"</span>,
+            borderRadius: <span class="s">"0.5rem"</span>
+          },
+          openLinksInNewTab: <span class="k">false</span>,             <span class="c">// MUST stay false so product taps hit the delegate (§7)</span>
+          disclaimerMarkdown: <span class="s">"Responses are AI-generated."</span>
+        });
+      };
+      s.onerror = <span class="k">function</span> () { nativeLog(<span class="s">'ERROR: failed to load widget bundle'</span>); };
+      document.head.appendChild(s);
+
+      <span class="k">function</span> <span class="fn">nativeLog</span>(msg) {
+        <span class="k">try</span> {
+          <span class="k">if</span> (window.webkit &amp;&amp; window.webkit.messageHandlers &amp;&amp; window.webkit.messageHandlers.nishka)
+            window.webkit.messageHandlers.nishka.postMessage({ type: <span class="s">'log'</span>, message: msg });   <span class="c">// iOS</span>
+          <span class="k">else if</span> (window.NishkaBridge &amp;&amp; window.NishkaBridge.log)
+            window.NishkaBridge.log(msg);                                                        <span class="c">// Android</span>
+          <span class="k">else</span> console.log(msg);
+        } <span class="k">catch</span> (e) {}
+      }
+    })();
+  &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+      <div class="note"><b>What changed from the storefront-derived draft</b> (mobile config review, 17 Aug): the config here is the widget's <em>direct</em> API, not the SFRA cartridge's inputs. <b>Removed</b> <code>cdnVersion</code>/<code>loadingMode</code> (bundle resolution is the script URL), the <code>--cc-panel-*</code> CSS vars (storefront-only; the widget doesn't read them), <code>dialogFullHeight</code>/<code>dialogPosition</code> (N/A for a <code>type:"chat"</code> embed), and the launcher-hiding CSS (<code>enableMinimize:false</code> means no launcher renders). <b>Added</b> <code>type:"chat"</code>, <code>headerConfig</code>, <code>enableEscalationToAgent</code>, <code>openLinksInNewTab:false</code>, <code>disclaimerMarkdown</code>. Colours/copy are placeholders for the brand team. Cart-sync prechat (<code>onCimulateWidgetReady</code>) remains out of scope (cart/checkout).</div>
+    </section>
+
+    <section id="g5">
+      <h2><span class="num">05</span> Step 2 — Host it in a WebView (iOS)</h2>
+      <p>Use <code>WKWebView</code>. Inject the config at document-start, serve the host page over a <b>custom scheme handler</b> (not <code>file://</code>), and set a navigation delegate for product interception.</p>
+      <div class="warn"><b>Do not load the host page from <code>file://</code> (mandatory — mobile config review).</b> A <code>file://</code> document has <b>no real origin</b>, which makes browser storage, the cross-origin connection to SCRT2, and any embedded payment surface behave unpredictably and hard to diagnose. Instead register a <code>WKURLSchemeHandler</code> (e.g. <code>app-assets://nishka/host.html</code>) that serves the bundled asset — the page gets a stable <code>https</code>-like origin with <b>no network round-trip</b>, so the "negligible" host-load cost in §9 still holds. Conversation resume (§11) also needs a stable origin to key storage on.</div>
+      <pre><span class="lang">swift</span><code><span class="k">import</span> WebKit
+
+<span class="k">final class</span> <span class="fn">NishkaViewController</span>: UIViewController, WKNavigationDelegate, WKScriptMessageHandler {
+
+    <span class="k">private var</span> webView: WKWebView!
+
+    <span class="c">// Supplied from remote config — never hardcode.</span>
+    <span class="k">struct</span> NishkaConfig {
+        <span class="k">let</span> scrt2Url: String; <span class="k">let</span> orgId: String; <span class="k">let</span> esDeveloperName: String
+        <span class="k">let</span> capabilitiesVersion: String; <span class="k">let</span> logoUrl: String
+    }
+    <span class="k">var</span> config: NishkaConfig!
+
+    <span class="k">override func</span> <span class="fn">viewDidLoad</span>() {
+        <span class="k">super</span>.viewDidLoad()
+        <span class="k">let</span> cc = WKUserContentController()
+        cc.add(<span class="k">self</span>, name: <span class="s">"nishka"</span>)                 <span class="c">// JS bridge (logging / events)</span>
+
+        <span class="c">// Inject config BEFORE any page script runs.</span>
+        <span class="k">let</span> js = <span class="s">"""
+          window.__NISHKA_CONFIG__ = {
+            scrt2Url: "\(config.scrt2Url)", orgId: "\(config.orgId)",
+            esDeveloperName: "\(config.esDeveloperName)",
+            capabilitiesVersion: "\(config.capabilitiesVersion)",
+            logoUrl: "\(config.logoUrl)",
+            routingAttributes: {}          // add NON-sensitive context here when authenticated (§10)
+          };
+        """</span>
+        cc.addUserScript(WKUserScript(source: js, injectionTime: .atDocumentStart, forMainFrameOnly: <span class="k">true</span>))
+
+        <span class="k">let</span> wkCfg = WKWebViewConfiguration(); wkCfg.userContentController = cc
+        wkCfg.allowsInlineMediaPlayback = <span class="k">true</span>
+        <span class="c">// Serve app assets over a real origin instead of file:// (see the warning above).</span>
+        wkCfg.setURLSchemeHandler(NishkaAssetHandler(), forURLScheme: <span class="s">"app-assets"</span>)
+        webView = WKWebView(frame: .zero, configuration: wkCfg)
+        webView.navigationDelegate = <span class="k">self</span>
+        webView.scrollView.bounces = <span class="k">false</span>            <span class="c">// reduce the "web scroll" tell</span>
+        view.addSubview(webView)                        <span class="c">// pin with your layout / safe area</span>
+
+        <span class="c">// Custom-scheme URL → served from the bundle by NishkaAssetHandler (no network hop).</span>
+        webView.load(URLRequest(url: URL(string: <span class="s">"app-assets://nishka/host.html"</span>)!))
+    }
+
+    <span class="c">// Product-tap interception — see §7.</span>
+    <span class="k">func</span> <span class="fn">webView</span>(_ webView: WKWebView, decidePolicyFor a: WKNavigationAction,
+                 decisionHandler: @escaping (WKNavigationActionPolicy) -&gt; <span class="k">Void</span>) {
+        <span class="k">guard let</span> url = a.request.url <span class="k">else</span> { decisionHandler(.allow); <span class="k">return</span> }
+        <span class="k">if let</span> pid = ProductURLParser.productId(from: url) {
+            decisionHandler(.cancel)                    <span class="c">// don't navigate the WebView away</span>
+            navigateToNativePDP(productId: pid)         <span class="c">// your existing PDP route</span>
+            <span class="k">return</span>
+        }
+        decisionHandler(.allow)
+    }
+
+    <span class="k">func</span> <span class="fn">userContentController</span>(_ c: WKUserContentController, didReceive m: WKScriptMessage) {
+        <span class="c">// Handle {type:"log"} and any future widget events posted from JS.</span>
+    }
+    <span class="k">private func</span> <span class="fn">navigateToNativePDP</span>(productId: String) { <span class="c">/* push ProductViewController */</span> }
+}</code></pre>
+      <div class="note"><code>injectionTime: .atDocumentStart</code> guarantees <code>__NISHKA_CONFIG__</code> exists before the host script reads it. <code>NishkaAssetHandler</code> is a small <code>WKURLSchemeHandler</code> that reads <code>host.html</code> (and, in static mode, <code>messaging.umd.js</code>) from the app bundle and returns them with a <code>text/html</code> / <code>application/javascript</code> content type — no network hop, real origin. The widget bundle still comes from the CDN unless you use static mode (§12).</div>
+    </section>
+
+    <section id="g6">
+      <h2><span class="num">06</span> Step 3 — Host it in a WebView (Android)</h2>
+      <p>Use <code>android.webkit.WebView</code>. Enable JS + DOM storage, inject config, serve the asset via <b><code>WebViewAssetLoader</code></b> (a real <code>https</code> origin, not <code>file:///android_asset/</code>), and override URL loading.</p>
+      <div class="warn"><b>Do not load from <code>file:///android_asset/</code> (mandatory — mobile config review).</b> Same reason as iOS: a <code>file://</code> page has no true origin, so DOM storage, the SCRT2 cross-origin connection, and conversation resume (§11) are unreliable. Use <code>androidx.webkit.WebViewAssetLoader</code> to serve the bundled host page under an <code>https://appassets.androidplatform.net/…</code> origin — assets are read locally (no network hop) but the page gets a stable origin.</div>
+      <pre><span class="lang">kotlin</span><code><span class="k">class</span> <span class="fn">NishkaFragment</span> : Fragment() {
+
+    <span class="k">data class</span> NishkaConfig(
+        <span class="k">val</span> scrt2Url: String, <span class="k">val</span> orgId: String, <span class="k">val</span> esDeveloperName: String,
+        <span class="k">val</span> capabilitiesVersion: String, <span class="k">val</span> logoUrl: String)
+    <span class="k">private lateinit var</span> config: NishkaConfig       <span class="c">// from remote config — never hardcode</span>
+
+    @SuppressLint(<span class="s">"SetJavaScriptEnabled"</span>)
+    <span class="k">override fun</span> <span class="fn">onViewCreated</span>(view: View, s: Bundle?) {
+        <span class="k">val</span> webView = view.findViewById&lt;WebView&gt;(R.id.nishka_webview)
+        webView.settings.apply {
+            javaScriptEnabled = <span class="k">true</span>
+            domStorageEnabled = <span class="k">true</span>                    <span class="c">// widget needs web storage</span>
+            mediaPlaybackRequiresUserGesture = <span class="k">false</span>
+        }
+
+        webView.addJavascriptInterface(<span class="k">object</span> {
+            @JavascriptInterface <span class="k">fun</span> <span class="fn">log</span>(msg: String) { Log.d(<span class="s">"Nishka"</span>, msg) }
+        }, <span class="s">"NishkaBridge"</span>)
+
+        <span class="c">// Serve bundled assets under a real https origin (no network hop).</span>
+        <span class="k">val</span> assetLoader = WebViewAssetLoader.Builder()
+            .addPathHandler(<span class="s">"/assets/"</span>, WebViewAssetLoader.AssetsPathHandler(requireContext()))
+            .build()
+
+        webView.webViewClient = <span class="k">object</span> : WebViewClientCompat() {
+            <span class="k">override fun</span> <span class="fn">shouldInterceptRequest</span>(v: WebView, req: WebResourceRequest): WebResourceResponse? =
+                assetLoader.shouldInterceptRequest(req.url)
+
+            <span class="k">override fun</span> <span class="fn">onPageStarted</span>(v: WebView, url: String?, f: Bitmap?) {
+                v.evaluateJavascript(
+                    <span class="s">"""window.__NISHKA_CONFIG__ = {
+                        scrt2Url:"${config.scrt2Url}", orgId:"${config.orgId}",
+                        esDeveloperName:"${config.esDeveloperName}",
+                        capabilitiesVersion:"${config.capabilitiesVersion}",
+                        logoUrl:"${config.logoUrl}",
+                        routingAttributes:{} };"""</span>, <span class="k">null</span>)   <span class="c">// add context when authenticated (§10)</span>
+            }
+            <span class="c">// Product-tap interception — see §7.</span>
+            <span class="k">override fun</span> <span class="fn">shouldOverrideUrlLoading</span>(v: WebView, req: WebResourceRequest): Boolean {
+                <span class="k">val</span> pid = ProductUrlParser.productId(req.url)
+                <span class="k">return if</span> (pid != <span class="k">null</span>) { navigateToNativePDP(pid); <span class="k">true</span> } <span class="k">else false</span>
+            }
+        }
+        <span class="c">// host.html + (static mode) messaging.umd.js live under src/main/assets/nishka/</span>
+        webView.loadUrl(<span class="s">"https://appassets.androidplatform.net/assets/nishka/host.html"</span>)
+    }
+    <span class="k">private fun</span> <span class="fn">navigateToNativePDP</span>(productId: String) { <span class="c">/* navigate to your PDP */</span> }
+}</code></pre>
+      <div class="warn"><code>onPageStarted</code> injection is a pragmatic default. If the host script races ahead of the config, load the host HTML as a string with the config <code>&lt;script&gt;</code> prepended, or gate <code>injectMessagingWidget</code> on a config-ready poll. <code>WebViewAssetLoader</code> comes from the <code>androidx.webkit</code> library.</div>
+    </section>
+
+    <section id="g7">
+      <h2><span class="num">07</span> Step 4 — Intercept product taps → native PDP</h2>
+      <p>This is the <b>only non-trivial native glue</b> in the discovery phase.</p>
+      <div class="flow">Tap in carousel  →  WebView tries to navigate to a product URL
+                 →  native interceptor recognizes it, <span class="hl">cancels the web nav</span>
+                 →  native PDP opens with the product ID  (back returns to chat)</div>
+      <p>Both platforms call a shared parser that recognizes a product URL and extracts the ID:</p>
+      <pre><span class="lang">pseudocode</span><code><span class="c">// Product URL shape (EXAMPLE — verify against a real tap):</span>
+<span class="c">//   https://www.tanishq.co.in/shop/p/aveer-gold-diamond-ring/513872</span>
+<span class="c">// Rule: path contains "/p/" and the last non-empty segment is the product id.</span>
+
+<span class="k">func</span> <span class="fn">productId</span>(from url) -&gt; String? {
+    <span class="k">guard</span> host is a Tanishq domain   <span class="k">else return</span> nil
+    <span class="k">guard</span> path contains <span class="s">"/p/"</span>       <span class="k">else return</span> nil
+    <span class="k">let</span> id = lastPathComponent
+    <span class="k">return</span> id.isProductIdShaped ? id : nil
+}</code></pre>
+      <div class="ok"><b>Confirmed (mobile config review):</b> on tap the widget performs a <b>normal same-frame link navigation to the product page URL</b> — <em>not</em> a JS event or <code>postMessage</code>. The delegate hooks in §5/§6 see it, so the interception design works as drafted. The product URL comes from the agent's response payload and points at the storefront, so the <code>/p/</code> + last-segment rule below describes <em>that storefront URL scheme</em>, not the widget's — validate it against a real tap and keep the parser app-side.</div>
+      <h3>Cases that silently bypass the interceptor</h3>
+      <ul class="bul">
+        <li><b><code>openLinksInNewTab</code> must stay <code>false</code></b> (its default, set in §4). If enabled, taps open in a new window that does <b>not</b> reliably reach <code>shouldOverrideUrlLoading</code> (Android) or the navigation delegate (iOS) — interception silently fails.</li>
+        <li><b>Cart management enabled on the deployment changes the tap entirely.</b> If the messaging deployment has cart management on, a product tap <b>stops being a link navigation</b> and instead drives the conversation to an <b>in-chat product detail view</b> — the delegate never fires and there is nothing to intercept. This flips the whole §7 design, so <b>confirm whether cart management will be enabled before building the interceptor</b> (§14, item 18). Nishka's launch scope is discovery-only (no cart / checkout), so it should be off — but verify it on the actual deployment.</li>
+        <li><b>Embedded express-payment surfaces need a real page origin.</b> Any express-payment surface the widget may render requires a true <code>https</code> origin to work — a further reason to serve the host page over a custom scheme handler rather than <code>file://</code> (§5/§6). This is not a case to route to the native PDP; it's a reason the §4.1 origin rule is mandatory.</li>
+      </ul>
+      <h3>Decisions to lock</h3>
+      <ul class="bul">
+        <li><b>Fallback for products not in the native catalog.</b> Open the URL in an <b>in-app browser</b> (<code>SFSafariViewController</code> / Chrome Custom Tabs), not the system browser — keeps it contained.</li>
+        <li><b>Back behavior.</b> Native back returns to the WebView; keep the VC/fragment alive so the conversation + scroll state are retained.</li>
+        <li><b>If URL matching proves brittle,</b> a <b>component-override</b> mechanism (<code>overridesUrl</code>, §15) can let a product tile call the native bridge directly — a cleaner contract than URL parsing. Ask Cimulate for the override hook shape (§14).</li>
+      </ul>
+    </section>
+
+    <section id="g8">
+      <h2><span class="num">08</span> Step 5 — Make it feel native (not a floating web widget)</h2>
+      <p>The difference between "native chat feature" and "bolted-on web page" is mostly configuration + presentation. With <code>type:"chat"</code> (§4) most of it is already handled:</p>
+      <table>
+        <tr><th>Do</th><th>Why</th></tr>
+        <tr><td><code>componentConfig.type: "chat"</code></td><td>Full-bleed embed that fills the container — no floating card, no separate chat header, no close button</td></tr>
+        <tr><td><code>enableMinimize: false</code> (no FAB), launch from a <b>native tab/button</b></td><td>No floating bubble renders; you control entry — no launcher-hiding CSS needed</td></tr>
+        <tr><td><code>isOpen: true</code>, <code>isMinimized: false</code></td><td>Present already open, like a native screen</td></tr>
+        <tr><td>Native app draws the <b>top nav</b> &amp; tab bar around the WebView</td><td>The frame is unmistakably native — and the only header</td></tr>
+        <tr><td>Set <code>headerConfig</code> (logo, colours) + <code>theme</code> (colours/font/radius)</td><td>Header, chat, <b>carousel cards and chips</b> all match the brand — theme reach confirmed (§14)</td></tr>
+        <tr><td>Load a Tanishq brand font in the host page before naming it in <code>theme.fontFamily</code></td><td>The widget assumes only a default font setup; an unnamed/unloaded font silently falls back</td></tr>
+        <tr><td><code>webView.scrollView.bounces = false</code> (iOS)</td><td>Removes the rubber-band "web scroll" tell</td></tr>
+      </table>
+      <div class="ok"><b>Doubled-header question resolved.</b> With <code>type:"chat"</code> the widget renders <b>no chat header</b>, so the native nav is the only header — there is nothing to reconcile and no un-suppressible close button (the dialog presentation had both). This is why §4 uses the embed rather than overriding panel geometry from outside.</div>
+      <div class="warn"><b>Safe area &amp; keyboard are native-side work.</b> The widget does <b>not</b> implement safe-area insets or keyboard avoidance. <code>viewport-fit=cover</code> only exposes the insets; the native host must actually apply them, and must keep the composer visible when the keyboard is focused (§13 checklist) — on <b>both</b> platforms. The web layer will not handle it.</div>
+    </section>
+
+    <section id="g9">
+      <h2><span class="num">09</span> Performance &amp; latency</h2>
+      <p>WebView latency splits into two buckets. <b>Cold start</b> is visible and worth engineering for; <b>steady-state rendering</b> is a non-issue for a chat + carousel. Critically, the largest single delay — the agent's first response — is <b>SCRT2 + Agentforce round-trip that every option pays</b>, WebView or fully native.</p>
+
+      <h3>Cold start — the "tap → usable chat" gap (stacks)</h3>
+      <table>
+        <tr><th>Stage</th><th>Typical cost</th><th>Notes</th></tr>
+        <tr><td>WebView process spin-up</td><td class="m">~50–300 ms</td><td>First WebView of the session is slowest</td></tr>
+        <tr><td>Load host HTML</td><td class="y">~0 ms</td><td>Negligible — served from app assets via the custom scheme handler (§5/§6), no network hop</td></tr>
+        <tr><td><b>Download <code>messaging.umd.js</code> from CDN</b></td><td class="n">~200 ms–1.5 s+</td><td>The dominant variable — bundle size × network × CDN edge</td></tr>
+        <tr><td>Widget init + <code>injectMessagingWidget</code></td><td class="m">~100–400 ms</td><td>JS parse/exec + mount</td></tr>
+        <tr><td>SCRT2 connect + first agent turn</td><td class="m">~0.5–2 s</td><td><b>Shared by all options</b> (native too) — not a WebView cost</td></tr>
+      </table>
+      <p class="legend">Realistically <b>~1–3 s to an interactive chat on a cold start</b>, dominated by the CDN bundle fetch. Warm/repeat opens are far faster.</p>
+
+      <h3>Steady state — not a real problem here</h3>
+      <div class="ok">This experience is text bubbles, a horizontal image scroller, and chips — trivial for a modern WebView. You won't hit the scroll-jank associated with heavy DOM/video pages. The one thing to watch is <b>carousel image loading</b>, which is network latency (identical to a native list), not rendering.</div>
+
+      <h3>Mitigations — make cold start feel instant</h3>
+      <ul class="bul">
+        <li><b>Bundle the widget locally (static mode).</b> Biggest single win — removes the CDN fetch from the critical path (and drops the CDN runtime dependency + CSP allowlist). Point the <code>&lt;script src&gt;</code> at a bundled copy of the pinned bundle instead of the CDN (§12); <b>get the bundle from Cimulate</b>.</li>
+        <li><b>Pre-warm the WebView.</b> Create the WebView and load the host HTML <em>before</em> the user taps (e.g. when the parent tab appears), so <code>injectMessagingWidget</code> has already run by the time they open Nishka.</li>
+        <li><b>Pin &amp; cache the CDN version.</b> If you can't go static, pin the version segment in the <code>&lt;script src&gt;</code> URL (§4) so the bundle is HTTP-cacheable — the 2nd open is much faster than the 1st.</li>
+        <li><b>Native skeleton during load.</b> Show a native splash/skeleton for the ~1–2 s window. The native frame is already on screen, so perceived latency stays low.</li>
+        <li><b>Keep the instance alive.</b> Don't destroy the WebView on back — retain the VC/fragment (§7) so re-opening is instant and conversation state survives.</li>
+      </ul>
+      <div class="note"><b>Bottom line:</b> the cold-start CDN fetch is the only WebView-specific latency, and static-mode + pre-warming largely neutralize it. Steady-state rendering is a non-issue, and the dominant agent-response latency is identical across all three options in Part 1.</div>
+    </section>
+
+    <section id="g10">
+      <h2><span class="num">10</span> Authenticated context &amp; hidden pre-chat variables</h2>
+      <div class="ok"><b>In scope.</b> Authenticated context and hidden pre-chat variables are part of the target experience — the personalised greeting and the digigold / order / tier lookups. Hidden pre-chat context (<code>routingAttributes</code>) works in the current widget today. The <b>verified-identity half has a Salesforce-side dependency</b> (see the warning below) that must be lined up in parallel so it lands with the rest — the app-side prerequisites don't wait on it.</div>
+      <div class="warn"><b>Critical-path dependency (mobile config review, 17 Aug):</b> the <b>current widget release establishes messaging sessions as an unauthenticated shopper only</b> — there is no config field or method to hand it a signed JWT yet, so a conversation can't be bound to a verified customer through the widget today. The platform capability exists — the Enhanced Chat API's <code>generateAccessTokenForAuthenticatedUser</code> is the authenticated counterpart to the unauthenticated call the widget currently makes — so <b>this is Salesforce work to close, and it gates the verified-identity lookups.</b> Track it as item&nbsp;1 in §14; the app-side pieces (JWT minting service, deployment config) proceed in parallel. <b>Do not</b> ship digigold/loyalty keyed on a routing attribute as an interim workaround — that's the exact IDOR the rule below prohibits; defer the lookup rather than weaken the identity model.</div>
+      <p>Some Tanishq use cases need the agent to act on the signed-in shopper — e.g. reading their <b>digigold balance</b>, order history, or loyalty tier by calling Tanishq APIs. The agent gets that context two ways, and <b>they are not interchangeable</b>:</p>
+
+      <h3>Two jobs, two mechanisms — don't mix them up</h3>
+      <table>
+        <tr><th class="c1">Job</th><th>Mechanism</th><th>Trust</th></tr>
+        <tr>
+          <td class="dim1">Identity &amp; authorization<br><span style="font-weight:400;color:var(--muted);font-size:12px">whose balance may we fetch</span></td>
+          <td><b>MIAW user verification</b> — the app sends a <b>signed JWT</b>, signed server-side by Tanishq's backend with the key/cert registered on the Embedded Service deployment. Salesforce verifies the signature before the agent trusts the identity.</td>
+          <td class="y">Trusted — agent derives the customer from the <em>verified</em> identity</td>
+        </tr>
+        <tr>
+          <td class="dim1">Context &amp; personalization<br><span style="font-weight:400;color:var(--muted);font-size:12px">name, city, tier, current page</span></td>
+          <td>Hidden pre-chat fields → <code>messagingConfig.routingAttributes</code></td>
+          <td class="n">Spoofable — set on the client. Convenience only.</td>
+        </tr>
+      </table>
+      <div class="warn"><b>The one rule that matters:</b> hidden pre-chat fields are set in the client, so they can be tampered with. <b>Never let a client-supplied field decide which customer's private data to return</b> — a plain <code>userId</code> in routing attributes is an IDOR (any client could request someone else's digigold balance). Sensitive lookups must key off the <b>verified JWT identity</b>, not a routing attribute.</div>
+
+      <h3>How context flows in the WebView model</h3>
+      <div class="flow">Native app (holds the authenticated session + can request a signed JWT)
+  ├─ IDENTITY:  gets a <span class="hl">signed JWT</span> from Tanishq backend  →  passes to widget's user-verification hook
+  │                                                    →  Salesforce verifies signature  →  agent trusts the customer
+  └─ CONTEXT:   injects non-sensitive details into the WebView  (same __NISHKA_CONFIG__ pattern)
+                    →  host HTML sets them as  <span class="hl">messagingConfig.routingAttributes</span>
+                         →  widget → SCRT2 → Agentforce sees them as conversation variables
+                              →  agent action calls Tanishq API keyed on the VERIFIED identity  →  digigold balance</div>
+      <div class="note"><b>Timing:</b> both the verification token and routing attributes must be set <b>before the conversation connects</b>. Inject at document-start and pass them into <code>injectMessagingWidget</code> — not after the chat is open.</div>
+
+      <h3>Wiring routing attributes (context)</h3>
+      <p>Extend the host config with a <code>routingAttributes</code> object and pass it through. Keep it to non-sensitive personalization:</p>
+      <pre><span class="lang">js</span><code><span class="c">// in nishka_host.html — merge into the injectMessagingWidget call (§4)</span>
+messagingConfig: {
+  scrt2Url: cfg.scrt2Url, orgId: cfg.orgId,
+  esDeveloperName: cfg.esDeveloperName,
+  capabilitiesVersion: cfg.capabilitiesVersion,
+  routingAttributes: cfg.routingAttributes || {}   <span class="c">// e.g. { firstName, city, loyaltyTier } — NON-sensitive</span>
+}</code></pre>
+      <p>Native side just adds the object to the injected config (§5/§6). iOS:</p>
+      <pre><span class="lang">swift</span><code><span class="c">// context only — safe to be client-set; do NOT put anything that authorizes data access here</span>
+<span class="k">let</span> attrs = <span class="s">"""{ "firstName":"\(user.firstName)", "loyaltyTier":"\(user.tier)" }"""</span>
+<span class="k">let</span> js = <span class="s">"""window.__NISHKA_CONFIG__ = { /* ...§5 fields... */,
+    routingAttributes: \(attrs) };"""</span>
+cc.addUserScript(WKUserScript(source: js, injectionTime: .atDocumentStart, forMainFrameOnly: <span class="k">true</span>))</code></pre>
+
+      <h3>Wiring identity (verification) — required for sensitive data</h3>
+      <ol class="steps">
+        <li><b>Tanishq backend signs a JWT</b> for the signed-in user (server-side, with the private key). The app fetches this token — it never signs client-side.</li>
+        <li><b>Salesforce admin registers user verification</b> on the Embedded Service deployment (the public key/cert + subject/claims mapping). <b>This is the piece we need to confirm exists</b> — see §14.</li>
+        <li>The native host hands the token to the widget's <b>user-verification hook</b> before connect. <b>This hook does not exist in the current widget release</b> (mobile config review) — it's the Salesforce-side gap tracked as item&nbsp;1 in §14, expected to surface the Enhanced Chat API's <code>generateAccessTokenForAuthenticatedUser</code> path. The steps above/below (backend signing, deployment config) can be built now so this drops in when available.</li>
+        <li>The agent's Apex/Flow action reads the <b>verified</b> customer identity and calls the Tanishq digigold API with it. Routing attributes may add context, but the customer key comes from the verified token.</li>
+      </ol>
+      <div class="note">Token hygiene: use <b>short-lived</b> JWTs, refresh on expiry, and re-issue on account switch / logout so a stale token can't bind the chat to the wrong user.</div>
+    </section>
+
+    <section id="g11">
+      <h2><span class="num">11</span> Escalation to a human agent (MVP) &amp; case creation (Phase 2)</h2>
+      <div class="warn"><b>Scope flag:</b> both handoff and case creation are <b>agent + MIAW platform behaviours</b>, not widget features you build — the widget already renders them in-chat. <b>Escalation to a live agent is MVP</b> (the "Talk to an agent" journey step); its only real native work is <b>notifications and lifecycle</b> — keeping the conversation alive when a human replies minutes or hours later. <b>Case creation is Phase 2</b>.</div>
+
+      <h3>Escalation to a human — the one real mobile problem: async replies</h3>
+      <div class="ok"><b>Works today (mobile config review):</b> the in-chat escalation control (enabled via <code>enableEscalationToAgent</code>, §4, and an escalation topic on the agent), and rendering of the handoff itself — the widget shows <b>participants joining/leaving, typing indicators, and routing failures</b>, and continues the same thread with a human agent. <span style="color:var(--muted)">(No queue-position display.)</span> Handoff <em>within a living session</em> needs no native work.</div>
+      <p>When the agent hands off, the conversation transfers via <b>Omni-Channel routing</b> to a queue of human agents (in the Service Console). The widget shows the transfer and continues the same thread. The catch is <b>timing</b>:</p>
+      <div class="warn"><b>A human doesn't reply instantly.</b> The shopper will background the app or close the WebView while waiting. Unlike the bot, the agent's reply can land <b>minutes or hours later</b> — so you cannot rely on the WebView being open. This is the defining requirement of the escalation MVP.</div>
+      <div class="flow">Shopper asks for a human  →  agent escalates  →  Omni-Channel routes to a queue
+     →  shopper backgrounds the app while waiting
+          →  human replies later  →  <span class="hl">push notification (APNs / FCM)</span>  →  shopper taps
+               →  app reopens the WebView, widget <span class="hl">resumes the SAME conversation</span>  →  human reply shown</div>
+      <div class="warn"><b>What does NOT work today (mobile config review):</b>
+        <ul style="margin:8px 0 0;">
+          <li><b>The conversation does not survive the WebView being destroyed.</b> Continuity relies on per-session browser storage, so it holds while the app is merely <em>backgrounded</em> — but a <b>cold start after a push begins a NEW conversation</b> rather than resuming. Conversation identity isn't keyed to anything the app controls, which is the underlying reason. <b>Durable resume is expected to follow from the verified-identity work in §10</b> (it needs a stable identity to key on) — so this depends on that Salesforce delivery (§14, item&nbsp;2).</li>
+          <li><b>The widget performs no push device registration.</b> Registering a device token is <b>native-side work against the messaging API</b> — endpoint <code>registerDeviceForPushNotifications</code>. How registration attaches to a widget-owned conversation is still an open item (§14, item&nbsp;3).</li>
+        </ul>
+      </div>
+      <h4 style="color:var(--gold);font-size:12px;letter-spacing:.05em;text-transform:uppercase;margin:18px 0 8px;">What this requires</h4>
+      <ol class="steps">
+        <li><b>Push notifications for messaging.</b> Configure <b>MIAW push</b> (APNs on iOS, FCM on Android) and register the device token via <code>registerDeviceForPushNotifications</code> — <b>native-side, not the widget</b>. Confirm how registration binds to the widget's conversation (§14, item&nbsp;3).</li>
+        <li><b>Durable conversation resume.</b> Reopening — especially a cold start from a push — must reconnect to the <b>same conversation</b>, not start fresh. Not available today; <b>gated on the stable-identity work in §10</b> (§14, item&nbsp;2).</li>
+        <li><b>Tap-through routing.</b> A messaging push should deep-link straight into the Nishka WebView (reopened to the live conversation), not the app home.</li>
+        <li><b>Presence / lifecycle.</b> Keep the messaging session valid across background/foreground; don't tear down the conversation when the WebView is dismissed (retain it as in §7, or rely on server-side session + resume).</li>
+      </ol>
+      <div class="note"><b>Honest status:</b> in-session handoff works now; <b>async replies across app restart are the least-proven piece and are blocked on Salesforce delivery of durable resume</b> (which is expected to build on §10's verified identity). The §11 caveat stands — resolve items&nbsp;2 &amp; 3 in §14 before committing dates. Push credentials, Omni-Channel queue, and device registration are app/admin prerequisites that can proceed in parallel.</div>
+
+      <h3>Case creation (Phase 2) — mostly config, little native work</h3>
+      <p>The agent creates a Salesforce <b>Case</b> via an Agentforce action (Apex/Flow) when the shopper asks for help ("my order hasn't arrived"). It can pre-fill the case from the <b>verified identity</b> (§10) — contact, order, loyalty tier. In the WebView this needs <b>no native code</b>: the agent runs the action and the widget renders the confirmation.</p>
+      <ul class="bul">
+        <li><b>Case → native deep link (optional).</b> If the agent returns a link to view the case ("track your request"), route it through the same URL interceptor as product taps (§7) and open a native "My Requests" screen instead of a web page.</li>
+        <li><b>Attachments — not currently supported.</b> The messaging experience has <b>no in-chat file/attachment UI today</b> (mobile config review), so a photo-attachment use case (e.g. a damaged item) is <b>out of scope for now</b> — it's a roadmap item (§14, item&nbsp;5). Don't design a Case flow that depends on it yet.</li>
+      </ul>
+    </section>
+
+    <section id="g12">
+      <h2><span class="num">12</span> Step 6 — Network / CSP / ATS allowlist</h2>
+      <p>The widget loads from a CDN and connects to SCRT2. Permit the following (origins taken from the reference <code>cspHelper.js</code>):</p>
+      <table>
+        <tr><th>Origin</th><th>Purpose</th><th>Notes</th></tr>
+        <tr><td><code>https://cdn.search.cimulate.ai</code></td><td>Widget bundle (script + style)</td><td>Not needed in static mode</td></tr>
+        <tr><td><code>https://*.salesforce-scrt.com</code></td><td>SCRT2 messaging + SSE</td><td>Always required</td></tr>
+        <tr><td>Your <code>scrt2Url</code> origin</td><td>SCRT2 connection</td><td>Always required</td></tr>
+      </table>
+      <ul class="bul">
+        <li><b>iOS ATS:</b> all HTTPS, so default ATS is fine. Only add a host-scoped exception for a sandbox custom/self-signed cert.</li>
+        <li><b>Android:</b> HTTPS works out of the box. For a cleartext/private-CA sandbox, add a <code>network-security-config</code> scoped to that host only — never global.</li>
+        <li><b>Static-bundle alternative:</b> "static mode" is <b>not a widget flag</b> — it's simply pointing the host page's <code>&lt;script src&gt;</code> at a <b>locally-bundled copy</b> of <code>messaging.umd.js</code> (served via the same custom-scheme handler as the host page, §5/§6) instead of the CDN. That removes the CDN from the critical path and the CSP allowlist entirely. Get the exact bundle from Salesforce and pin the version (§14, item&nbsp;4).</li>
+      </ul>
+    </section>
+
+    <section id="g13">
+      <h2><span class="num">13</span> Testing checklist</h2>
+      <h3>Discovery — deliverable now (§1–§9)</h3>
+      <ul class="check">
+        <li>Widget loads and connects (guest) — welcome message from Nishka appears.</li>
+        <li>Free-text query returns a <b>product carousel</b>; horizontal touch scroll works.</li>
+        <li><b>Chips / suggestions</b> render and are tappable; tapping sends the follow-up.</li>
+        <li>Tapping a product <b>opens the native PDP</b> with the correct product (not a web page in the WebView).</li>
+        <li>Back from PDP returns to the <b>same chat state</b> (conversation + scroll retained).</li>
+        <li>Product not in native catalog → falls back to in-app browser, not the system browser.</li>
+        <li>Full-screen presentation: no floating FAB, native nav present, safe-area respected.</li>
+        <li>Keyboard: composer stays visible when focused (both platforms).</li>
+        <li>CDN blocked / offline → graceful failure (logged via bridge), app doesn't hang.</li>
+        <li>Dev / stage / prod config swap works via remote config (no rebuild).</li>
+        <li>Theme matches Tanishq brand (colors, header, fonts) end-to-end.</li>
+      </ul>
+      <h3>Authenticated &amp; loyalty (§10) — once verified identity lands (§14 item 1)</h3>
+      <ul class="check">
+        <li>Signed-in shopper: verified JWT is accepted; agent greets by the <b>verified</b> identity.</li>
+        <li>Loyalty action (e.g. <b>digigold balance</b>) returns the correct signed-in user's data.</li>
+        <li>Tampered / spoofed routing attribute <b>cannot</b> retrieve another user's private data.</li>
+        <li>Token expiry / account switch / logout re-issues the token; chat rebinds correctly.</li>
+      </ul>
+      <h3>Escalation to a live agent (§11)</h3>
+      <ul class="check">
+        <li><b>Works now:</b> escalation transfers to a human; participants/typing/routing-failure render; the same thread continues in the widget.</li>
+        <li><b>Works now:</b> conversation survives <b>background/foreground</b> while the WebView is alive.</li>
+        <li><b>Blocked on §14 items 2 &amp; 3:</b> app backgrounded → human replies later → <b>push notification</b> arrives (native registration).</li>
+        <li><b>Blocked on §14 item 2:</b> tapping the push after a <b>cold start reopens the WebView to the SAME conversation</b> (not a fresh chat).</li>
+      </ul>
+      <h3>Case creation (§11)</h3>
+      <ul class="check">
+        <li>Agent creates a <b>Case</b>, pre-filled from the verified identity; confirmation renders in-chat.</li>
+        <li>"View my request" link opens the <b>native</b> requests screen (not a web page).</li>
+      </ul>
+    </section>
+
+    <section id="g14">
+      <h2><span class="num">14</span> Answers &amp; open items</h2>
+      <p>The mobile config review (17 Aug 2026) answered the original questions for Cimulate. Confirmed answers first, then the items still open with their owners.</p>
+
+      <h3>Confirmed by the review</h3>
+      <table>
+        <tr><th class="c1">Question</th><th>Answer</th></tr>
+        <tr><td class="dim1">Product tap: URL or JS event?</td><td class="y">Same-frame <b>link navigation</b> to the product URL from the agent payload — no event/<code>postMessage</code>. Keep <code>openLinksInNewTab</code> off. Three bypass cases in §7.</td></tr>
+        <tr><td class="dim1">Header suppression?</td><td class="y">No suppression flag needed — <b><code>type:"chat"</code></b> has no chat header or close button, so native nav is the only header (§4, §8).</td></tr>
+        <tr><td class="dim1">Theme depth — carousels &amp; chips?</td><td class="y"><b>Both.</b> Tokens: primary/secondary/font/background/border colour, border radius, font family, plus <code>headerConfig</code> (§8, §15). A few neutral tones are fixed.</td></tr>
+        <tr><td class="dim1">Guest discovery fully works?</td><td class="y"><b>Yes, fully</b> — and today it's the only session mode.</td></tr>
+        <tr><td class="dim1">Routing attributes → conversation variables?</td><td class="y">Pass as <code>messagingConfig.routingAttributes</code> (string keys/values), sent at conversation create. Whether they surface as Agentforce variables depends on deployment/agent config. A widget-ready event exists if they must be supplied async.</td></tr>
+        <tr><td class="dim1">Escalation rendering?</td><td class="y">Participant joins/leaves, typing indicators, routing failures render in-chat; thread continues with the human. No queue-position UI. Needs an escalation topic on the agent (§11).</td></tr>
+        <tr><td class="dim1">Resume on reopen — keyed on what?</td><td class="m">Within a living WebView session, yes. <b>Not</b> across teardown/app restart, and not keyed to an app-controlled identity — see item 2 (§11).</td></tr>
+        <tr><td class="dim1">User-verification (signed JWT) hook?</td><td class="n"><b>Not in the current release</b> — item 1 (§10).</td></tr>
+        <tr><td class="dim1">Widget registers for push?</td><td class="n"><b>No</b> — native-side work against the messaging API — item 3 (§11).</td></tr>
+        <tr><td class="dim1">File upload in a WebView?</td><td class="n"><b>No attachment UI</b> currently — item 6 (§11 case creation).</td></tr>
+      </table>
+
+      <h3>Open items &amp; owners</h3>
+      <table>
+        <tr><th>#</th><th>Item</th><th>Owner</th><th>Notes</th></tr>
+        <tr class="rowbest"><td>1</td><td><b>Verified user identity (signed JWT) in the widget</b></td><td><b>Salesforce</b></td><td>The §10 blocker. Platform capability exists (<code>generateAccessTokenForAuthenticatedUser</code>); widget integration does not. Scoping in progress, no date yet.</td></tr>
+        <tr class="rowbest"><td>2</td><td><b>Durable conversation resume across app restarts</b></td><td><b>Salesforce</b></td><td>Expected to follow item 1 (resume needs a stable identity to key on). Gates async replies (§11).</td></tr>
+        <tr><td>3</td><td>Can native push registration attach to a widget-owned conversation?</td><td><b>Salesforce</b></td><td>Confirm against the messaging API whether purely app-side or needs a Salesforce interface (§11).</td></tr>
+        <tr><td>4</td><td>Published mobile/native reference host page &amp; config guide</td><td><b>Salesforce</b></td><td>Documentation gap; this doc is the interim substitute.</td></tr>
+        <tr><td>5</td><td>Pinned widget version + locally-bundled copy if CDN can't be allowlisted</td><td><b>Salesforce</b></td><td>Salesforce nominates a version and provides the artifact (§4, §12).</td></tr>
+        <tr><td>6</td><td>In-chat file attachments</td><td><b>Salesforce</b></td><td>Not currently supported; roadmap. Affects the case-creation flow only (§11).</td></tr>
+        <tr><td>7</td><td>Native rendering SDK roadmap (Option A)</td><td><b>Salesforce</b></td><td>Nothing in Option C is throwaway if it later ships. Timing separately.</td></tr>
+        <tr><td>8</td><td><b>Host page over a custom scheme handler</b> (replaces <code>file://</code>)</td><td><b>Tanishq</b></td><td>§5/§6. Mandatory.</td></tr>
+        <tr><td>9</td><td>Product URL parser + native PDP route</td><td><b>Tanishq</b></td><td>URL scheme is the storefront's; validate against a real tap (§7).</td></tr>
+        <tr><td>10</td><td>Safe-area insets &amp; keyboard handling</td><td><b>Tanishq</b></td><td>Native-side, both platforms (§8, §13).</td></tr>
+        <tr><td>11</td><td>Brand theme values + hosting any custom font</td><td><b>Tanishq</b></td><td>Theme applies to chat, carousel and chips (§8).</td></tr>
+        <tr><td>12</td><td>MIAW user verification configured on the deployment (key/cert, claim mapping)</td><td><b>Tanishq</b> (SF admin)</td><td>§10 prerequisite; can proceed in parallel with item 1.</td></tr>
+        <tr><td>13</td><td>Backend JWT minting service, key ownership, claim set</td><td><b>Tanishq</b></td><td>Server-side; never sign in the app (§10).</td></tr>
+        <tr><td>14</td><td>Agent action reads verified identity (not a routing attribute); API validates server-side</td><td><b>Tanishq</b></td><td>The safeguard behind the §10 analysis.</td></tr>
+        <tr><td>15</td><td>Omni-Channel queue, business hours, no-agent fallback</td><td><b>Tanishq</b> (SF admin)</td><td>§11 prerequisite.</td></tr>
+        <tr><td>16</td><td>Push credentials (APNs/FCM) on the deployment + app-side registration</td><td><b>Tanishq</b></td><td>§11; pending item 3.</td></tr>
+        <tr><td>17</td><td>Create Case action &amp; pre-filled fields</td><td><b>Tanishq</b></td><td>Case-creation flow (§11).</td></tr>
+        <tr class="rowbest"><td>18</td><td><b>Confirm whether cart management will be enabled on the deployment</b></td><td><b>Salesforce</b> confirm · <b>Tanishq</b> decide</td><td>The one answer that materially changes §7: with cart management on, product taps become an in-chat detail view instead of a link navigation, so the interceptor never fires. Nishka is discovery-only, so expected off — verify on the deployment.</td></tr>
+      </table>
+      <div class="note"><b>Critical path to the full experience:</b> items 1 → 2 (Salesforce) unblock the verified-identity lookups (§10) and async escalation resume (§11). Every Tanishq-owned prerequisite (items 8–17) is independent of that Salesforce work and <b>can start now</b>, so those two capabilities are the only true gates once they land.</div>
+    </section>
+
+    <section id="g15">
+      <h2><span class="num">15</span> Appendix — full widget config reference</h2>
+      <p>Fields accepted by <code>injectMessagingWidget(config)</code> — the widget's <b>direct</b> API (corrected per the mobile config review, 17 Aug). Defaults shown.</p>
+      <table>
+        <tr><th>Field</th><th>Type</th><th>Default</th><th>Notes</th></tr>
+        <tr><td><code>elementId</code></td><td>string</td><td>—</td><td>DOM id the widget mounts into</td></tr>
+        <tr><td><code>timeout</code></td><td>number</td><td>—</td><td>ms to wait for the mount element / init</td></tr>
+        <tr><td><code>componentConfig.type</code></td><td><code>"chat"|"dialog"</code></td><td><code>"dialog"</code></td><td><b>Use <code>"chat"</code></b> — full-bleed embed, no header, no close button (§4)</td></tr>
+        <tr><td><code>componentConfig.isOpen</code></td><td>bool</td><td><code>false</code></td><td><b>Set <code>true</code></b> to present opened</td></tr>
+        <tr><td><code>componentConfig.isMinimized</code></td><td>bool</td><td><code>false</code></td><td>Already <code>false</code>; no launcher appears</td></tr>
+        <tr><td><code>componentConfig.enableMinimize</code></td><td>bool</td><td><code>false</code></td><td>Keep <code>false</code> — no minimise control / floating launcher renders</td></tr>
+        <tr><td><code>messagingConfig.scrt2Url</code></td><td>string</td><td>—</td><td><b>Required</b></td></tr>
+        <tr><td><code>messagingConfig.orgId</code></td><td>string</td><td>—</td><td><b>Required</b></td></tr>
+        <tr><td><code>messagingConfig.esDeveloperName</code></td><td>string</td><td>—</td><td><b>Required</b></td></tr>
+        <tr><td><code>messagingConfig.capabilitiesVersion</code></td><td>string</td><td>rel-248 level</td><td><b>Set <code>"65"</code> explicitly</b> — default is <b>not</b> 65 (§3). ≥<code>"63"</code> for action progress indicators</td></tr>
+        <tr><td><code>messagingConfig.routingAttributes</code></td><td>object</td><td><code>{}</code></td><td>Non-sensitive context; sent at conversation create (§10)</td></tr>
+        <tr><td><code>messagingConfig.enableEscalationToAgent</code></td><td>bool</td><td><code>false</code></td><td><b>Set <code>true</code></b> — in-chat "talk to an agent"; no-op unless the agent has an escalation topic (§11)</td></tr>
+        <tr><td><code>headerConfig</code></td><td>object</td><td>—</td><td>Brand header: <code>headerText</code>, <code>logoUrl</code>, background/text colour, font size/weight/family/alignment. Supersedes the old top-level <code>headerText</code> (whose default label was "Commerce Client")</td></tr>
+        <tr><td><code>theme</code></td><td>object</td><td>—</td><td>Brand tokens — reaches <b>carousel cards &amp; chips</b>, not just the frame: primary/secondary/font/background/border colour, border radius, font family</td></tr>
+        <tr><td><code>openLinksInNewTab</code></td><td>bool</td><td><code>false</code></td><td><b>Keep <code>false</code></b> so product taps hit the native delegate (§7)</td></tr>
+        <tr><td><code>disclaimerMarkdown</code></td><td>string</td><td>—</td><td>AI disclaimer line</td></tr>
+        <tr><td><code>enableDownloadTranscript</code></td><td>bool</td><td><code>false</code></td><td>Requires the messaging channel to permit transcript download</td></tr>
+        <tr><td><code>overridesUrl</code></td><td>string</td><td>—</td><td>Component-override script — could let a product tile call the native bridge directly (§7)</td></tr>
+      </table>
+      <div class="warn"><b>Removed from the earlier draft (not widget fields):</b> <code>cdnVersion</code> and <code>loadingMode</code> were <b>SFRA-cartridge inputs</b> that resolved which bundle to load — the widget never receives them. On mobile, the <b>version is the segment in the <code>&lt;script src&gt;</code> URL</b> and static mode is pointing that tag at a bundled copy (§4, §12). The <code>--cc-panel-*</code> CSS variables and <code>dialogFullHeight</code>/<code>dialogPosition</code> were storefront/dialog-layer settings the widget doesn't read under a <code>type:"chat"</code> embed. <code>mode:"messaging"</code> is implied by the messaging bundle.</div>
+      <div class="note"><b>Bundle version + static artifact</b> and a published <b>mobile reference host page</b> are open items owned by Salesforce (§14, items 4 &amp; 5). The web/SFRA reference (<code>plugin_commerce_client</code> cartridge) also implements a session-bound prechat handshake (<code>onCimulateWidgetReady</code> → encrypted tokens) for <b>cart sync</b> — deliberately out of scope here (cart/checkout).</div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+  var links = Array.prototype.slice.call(document.querySelectorAll('nav.toc a'));
+  var map = {};
+  links.forEach(function(a){ map[a.getAttribute('href').slice(1)] = a; });
+  var obs = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        links.forEach(function(l){ l.classList.remove('active'); });
+        if(map[e.target.id]) map[e.target.id].classList.add('active');
+      }
+    });
+  }, { rootMargin: '-8% 0px -80% 0px' });
+  document.querySelectorAll('section').forEach(function(s){ obs.observe(s); });
+
+  // Auto-size the shopper-journey iframe to its content (same-origin). Falls back to the CSS height if blocked (e.g. file:// cross-origin rules).
+  (function(){
+    var f = document.querySelector('.journey-frame iframe');
+    if(!f) return;
+    function fit(){
+      try {
+        var d = f.contentDocument || f.contentWindow.document;
+        var h = Math.max(d.body.scrollHeight, d.documentElement.scrollHeight);
+        if(h > 200) f.style.height = (h + 24) + 'px';
+      } catch(e) { /* cross-origin — keep the CSS fallback height */ }
+    }
+    f.addEventListener('load', fit);
+    window.addEventListener('resize', fit);
+    setTimeout(fit, 400);
+  })();
+</script>
+</body>
+</html>
