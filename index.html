@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Nishka on Mobile — WebView Integration Guide</title>
+<title>Mia on Mobile — WebView Integration Guide</title>
 <style>
   :root{
     --maroon:#7a1e2b;--maroon-dark:#5c1621;--gold:#b8860b;--gold-soft:#d4af37;
@@ -141,7 +141,7 @@
 
   <nav class="toc">
     <div class="brand">TANISHQ</div>
-    <div class="brandsub">Nishka · Mobile Integration</div>
+    <div class="brandsub">Mia · Mobile Integration</div>
 
     <div class="part">Overview</div>
     <ul>
@@ -177,19 +177,19 @@ MVP — discovery + authenticated context &amp; loyalty actions. No cart / check
 
     <!-- ================= PART 1 — SHOPPER JOURNEY ================= -->
     <div class="part-banner first">
-      <div class="brand">TANISHQ · NISHKA</div>
+      <div class="brand">TANISHQ · MIA</div>
       <div class="kicker">Overview</div>
       <h1>What the shopper experiences, end to end</h1>
-      <p><b>The experience we're building toward:</b> a signed-in shopper opens Nishka, gets a welcome menu, is guided through a product search, taps into a native PDP, checks their digigold balance, and can escalate to a live agent. The rest of this guide is how we deliver it in a WebView — phased, with guest discovery shipping first.</p>
+      <p><b>The experience we're building toward:</b> a signed-in shopper opens Mia, gets a welcome menu, is guided through a product search, taps into a native PDP, checks their digigold balance, and can escalate to a live agent. The rest of this guide is how we deliver it in a WebView — phased, with guest discovery shipping first.</p>
     </div>
 
     <section id="g-journey">
       <h2><span class="num">★</span> End-to-end shopper journey</h2>
-      <p>The whole experience a signed-in shopper sees — from login, through Nishka's welcome menu and a guided product search, to a native PDP, a digigold balance keyed on the verified identity, and escalation to a live agent. Colour tells you what's <b>WebView</b> (chat, buttons, carousel, balance, handoff) vs. <b>native</b> (login, home, PDP); each step is mapped to the section that implements it.</p>
+      <p>The whole experience a signed-in shopper sees — from login, through Mia's welcome menu and a guided product search, to a native PDP, a digigold balance keyed on the verified identity, and escalation to a live agent. Colour tells you what's <b>WebView</b> (chat, buttons, carousel, balance, handoff) vs. <b>native</b> (login, home, PDP); each step is mapped to the section that implements it.</p>
       <div class="journey-frame">
-        <iframe src="mockups/nishka-end-to-end-flow.html" title="Nishka end-to-end shopper journey" loading="lazy"></iframe>
+        <iframe src="mockups/mia-end-to-end-flow.html" title="Mia end-to-end shopper journey" loading="lazy"></iframe>
       </div>
-      <p class="legend" style="margin-top:10px;">Full-size interactive version: <a href="mockups/nishka-end-to-end-flow.html" target="_blank">open the shopper-journey mockup in a new tab ↗</a>. The sections below are the developer-facing detail behind this flow.</p>
+      <p class="legend" style="margin-top:10px;">Full-size interactive version: <a href="mockups/mia-end-to-end-flow.html" target="_blank">open the shopper-journey mockup in a new tab ↗</a>. The sections below are the developer-facing detail behind this flow.</p>
     </section>
 
     <hr class="part-rule" />
@@ -198,7 +198,7 @@ MVP — discovery + authenticated context &amp; loyalty actions. No cart / check
     <div class="part-banner">
       <div class="kicker">Approach</div>
       <h1>Why a WebView — the integration path available today</h1>
-      <p>The Tanishq iOS &amp; Android apps talk to the shopper agent over Salesforce SCRT2 messaging. The rich replies — product carousels and suggestion chips — are drawn by Cimulate's closed <code style="color:#fff;background:rgba(255,255,255,.15)">copilot-widget</code> bundle, which is <b>web-only</b>. Hosting that widget in a native WebView is the way to bring Nishka to the mobile apps now.</p>
+      <p>The Tanishq iOS &amp; Android apps talk to the shopper agent over Salesforce SCRT2 messaging. The rich replies — product carousels and suggestion chips — are drawn by Cimulate's closed <code style="color:#fff;background:rgba(255,255,255,.15)">copilot-widget</code> bundle, which is <b>web-only</b>. Hosting that widget in a native WebView is the way to bring Mia to the mobile apps now.</p>
     </div>
 
     <section id="why-webview">
@@ -222,7 +222,7 @@ MVP — discovery + authenticated context &amp; loyalty actions. No cart / check
         </tr>
       </table>
       <div class="note">Because <b>rendering is the expensive part</b>, the transport-only SDK doesn't remove the hard work — it's the pipe, not the UI. Until a native rendering SDK ships, hosting Cimulate's existing web widget in a WebView is the only way to get the real carousels and chips without rebuilding and maintaining a renderer ourselves. <b>This guide is that integration.</b></div>
-      <div class="ok"><b>Not throwaway.</b> When Cimulate ships a native rendering SDK, migrate to it for a fully-native experience — the native shell, the "Ask Nishka" entry point, product-tap interception (§7), JWT verification (§10), and the push / resume plumbing (§11) all carry over unchanged.</div>
+      <div class="ok"><b>Not throwaway.</b> When Cimulate ships a native rendering SDK, migrate to it for a fully-native experience — the native shell, the "Ask Mia" entry point, product-tap interception (§7), JWT verification (§10), and the push / resume plumbing (§11) all carry over unchanged.</div>
 
       <h3>Scope &amp; phasing</h3>
       <p>The full experience ships in phases. Discovery is deliverable now; the authenticated and async-escalation phases gate on Salesforce-side capabilities (§10, §11), not on the app build.</p>
@@ -241,7 +241,7 @@ MVP — discovery + authenticated context &amp; loyalty actions. No cart / check
     <!-- ================= PART 3 — DEVELOPER GUIDE ================= -->
     <div class="part-banner">
       <div class="kicker">Developer Guide</div>
-      <h1>Embedding Nishka in the Tanishq apps via WebView</h1>
+      <h1>Embedding Mia in the Tanishq apps via WebView</h1>
       <p>Step-by-step integration for iOS &amp; Android developers — the detail behind the journey above.</p>
       <div class="meta">
         <span class="pill"><b>Scope:</b>&nbsp;Discovery · authenticated loyalty actions · escalation to a human agent · case creation</span>
@@ -254,11 +254,11 @@ MVP — discovery + authenticated context &amp; loyalty actions. No cart / check
     <section id="g1">
       <h2><span class="num">01</span> How it works (architecture)</h2>
       <div class="flow">Native app (iOS / Android)
-  └─ presents a full-screen WebView from an <span class="hl">"Ask Nishka"</span> entry point
+  └─ presents a full-screen WebView from an <span class="hl">"Ask Mia"</span> entry point
        └─ loads a tiny local HTML host page
             └─ &lt;script&gt; loads  <span class="hl">messaging.umd.js</span>  from  cdn.search.cimulate.ai
                  └─ calls  <span class="hl">CimulateMessaging.injectMessagingWidget(config)</span>
-                      └─ widget connects to SCRT2 (guest OR verified) → Agentforce (Nishka agent)
+                      └─ widget connects to SCRT2 (guest OR verified) → Agentforce (Mia agent)
                       └─ widget renders chat + product carousels + chips  (all inside the WebView)
                       └─ agent actions: loyalty lookups · <span class="hl">create case</span> · <span class="hl">escalate to human</span>
 
@@ -274,7 +274,7 @@ Native app intercepts / assists:
       <h2><span class="num">02</span> Prerequisites</h2>
       <h3>Org / platform <span style="font-weight:400;font-size:13px;color:var(--muted)">(Salesforce admin / commerce team — confirm done)</span></h3>
       <ol class="steps">
-        <li><b>Agentforce + Messaging (SCRT2) configured</b> in the core org, with an <b>Embedded Service Deployment</b> (Messaging for In-App/Web) whose channel routes to the <b>Nishka</b> agent (<code>Tanishq_Titan_Agent</code>).</li>
+        <li><b>Agentforce + Messaging (SCRT2) configured</b> in the core org, with an <b>Embedded Service Deployment</b> (Messaging for In-App/Web) whose channel routes to the <b>Mia</b> agent (<code>Tanishq_Titan_Agent</code>).</li>
         <li><b>MIAW user verification (signed JWT)</b> configured on the deployment (public key/cert + claim mapping) — the deployment-side prerequisite for the verified-identity lookups (§10). Can be stood up in parallel with the Salesforce widget-side work it pairs with (§14, items 1 &amp; 12). Guest mode covers discovery without it.</li>
         <li><b>Agent actions:</b> loyalty API actions and an <b>escalation / transfer-to-agent</b> path (Omni-Channel + a queue of human agents) for §10/§11; a <b>Create Case</b> action for the case-creation flow (§11).</li>
         <li><b>CDN access</b> to <code>https://cdn.search.cimulate.ai</code> from mobile clients (or use static-bundle mode — see §12).</li>
@@ -319,16 +319,16 @@ Native app intercepts / assists:
   &lt;style&gt;
     html, body { margin:0; height:100%; background:#faf6f0; overflow:hidden; }
     <span class="c">/* type:"chat" fills its container; the native app draws the header/nav. */</span>
-    #nishka-widget { position:fixed; inset:0; }
+    #mia-widget { position:fixed; inset:0; }
   &lt;/style&gt;
 &lt;/head&gt;
 &lt;body&gt;
-  &lt;div id="nishka-widget"&gt;&lt;/div&gt;
+  &lt;div id="mia-widget"&gt;&lt;/div&gt;
 
   <span class="c">&lt;!-- Config is injected by the native host at document-start (see §5/§6).
        The bundle VERSION is a segment in the script URL below — there is no cdnVersion field. --&gt;</span>
   &lt;script&gt;
-    window.__NISHKA_CONFIG__ = window.__NISHKA_CONFIG__ || {
+    window.__MIA_CONFIG__ = window.__MIA_CONFIG__ || {
       scrt2Url: <span class="s">"REPLACED_BY_HOST"</span>, orgId: <span class="s">"REPLACED_BY_HOST"</span>,
       esDeveloperName: <span class="s">"REPLACED_BY_HOST"</span>,
       capabilitiesVersion: <span class="s">"65"</span>,
@@ -339,7 +339,7 @@ Native app intercepts / assists:
 
   &lt;script&gt;
     (function () {
-      <span class="k">var</span> cfg = window.__NISHKA_CONFIG__;
+      <span class="k">var</span> cfg = window.__MIA_CONFIG__;
       <span class="k">var</span> s = document.createElement(<span class="s">'script'</span>);
       <span class="c">// Version pinning IS this URL segment. Point it at a bundled copy for static mode (§12).</span>
       s.src = <span class="s">'https://cdn.search.cimulate.ai/copilot-widget/1.23.0/messaging.umd.js'</span>;
@@ -348,7 +348,7 @@ Native app intercepts / assists:
         <span class="k">var</span> mod = window.CimulateMessaging;
         <span class="k">if</span> (!mod || !mod.injectMessagingWidget) { nativeLog(<span class="s">'ERROR: injectMessagingWidget missing'</span>); <span class="k">return</span>; }
         mod.<span class="fn">injectMessagingWidget</span>({
-          elementId: <span class="s">"nishka-widget"</span>,
+          elementId: <span class="s">"mia-widget"</span>,
           timeout: <span class="n">5000</span>,
           componentConfig: {
             type: <span class="s">"chat"</span>,               <span class="c">// full-bleed embed: no chat header, no close button</span>
@@ -364,7 +364,7 @@ Native app intercepts / assists:
             enableEscalationToAgent: <span class="k">true</span>          <span class="c">// in-chat "talk to an agent" control (§11)</span>
           },
           headerConfig: {                        <span class="c">// brand header (most of the §8 header work)</span>
-            headerText: <span class="s">"Nishka"</span>,
+            headerText: <span class="s">"Mia"</span>,
             logoUrl: cfg.logoUrl,
             headerBackgroundColor: <span class="s">"#faf6f0"</span>,
             headerTextColor: <span class="s">"#1a202c"</span>
@@ -384,10 +384,10 @@ Native app intercepts / assists:
 
       <span class="k">function</span> <span class="fn">nativeLog</span>(msg) {
         <span class="k">try</span> {
-          <span class="k">if</span> (window.webkit &amp;&amp; window.webkit.messageHandlers &amp;&amp; window.webkit.messageHandlers.nishka)
-            window.webkit.messageHandlers.nishka.postMessage({ type: <span class="s">'log'</span>, message: msg });   <span class="c">// iOS</span>
-          <span class="k">else if</span> (window.NishkaBridge &amp;&amp; window.NishkaBridge.log)
-            window.NishkaBridge.log(msg);                                                        <span class="c">// Android</span>
+          <span class="k">if</span> (window.webkit &amp;&amp; window.webkit.messageHandlers &amp;&amp; window.webkit.messageHandlers.mia)
+            window.webkit.messageHandlers.mia.postMessage({ type: <span class="s">'log'</span>, message: msg });   <span class="c">// iOS</span>
+          <span class="k">else if</span> (window.MiaBridge &amp;&amp; window.MiaBridge.log)
+            window.MiaBridge.log(msg);                                                        <span class="c">// Android</span>
           <span class="k">else</span> console.log(msg);
         } <span class="k">catch</span> (e) {}
       }
@@ -401,28 +401,28 @@ Native app intercepts / assists:
     <section id="g5">
       <h2><span class="num">05</span> Step 2 — Host it in a WebView (iOS)</h2>
       <p>Use <code>WKWebView</code>. Inject the config at document-start, serve the host page over a <b>custom scheme handler</b> (not <code>file://</code>), and set a navigation delegate for product interception.</p>
-      <div class="warn"><b>Do not load the host page from <code>file://</code> (mandatory — mobile config review).</b> A <code>file://</code> document has <b>no real origin</b>, which makes browser storage, the cross-origin connection to SCRT2, and any embedded payment surface behave unpredictably and hard to diagnose. Instead register a <code>WKURLSchemeHandler</code> (e.g. <code>app-assets://nishka/host.html</code>) that serves the bundled asset — the page gets a stable <code>https</code>-like origin with <b>no network round-trip</b>, so the "negligible" host-load cost in §9 still holds. Conversation resume (§11) also needs a stable origin to key storage on.</div>
+      <div class="warn"><b>Do not load the host page from <code>file://</code> (mandatory — mobile config review).</b> A <code>file://</code> document has <b>no real origin</b>, which makes browser storage, the cross-origin connection to SCRT2, and any embedded payment surface behave unpredictably and hard to diagnose. Instead register a <code>WKURLSchemeHandler</code> (e.g. <code>app-assets://mia/host.html</code>) that serves the bundled asset — the page gets a stable <code>https</code>-like origin with <b>no network round-trip</b>, so the "negligible" host-load cost in §9 still holds. Conversation resume (§11) also needs a stable origin to key storage on.</div>
       <pre><span class="lang">swift</span><code><span class="k">import</span> WebKit
 
-<span class="k">final class</span> <span class="fn">NishkaViewController</span>: UIViewController, WKNavigationDelegate, WKScriptMessageHandler {
+<span class="k">final class</span> <span class="fn">MiaViewController</span>: UIViewController, WKNavigationDelegate, WKScriptMessageHandler {
 
     <span class="k">private var</span> webView: WKWebView!
 
     <span class="c">// Supplied from remote config — never hardcode.</span>
-    <span class="k">struct</span> NishkaConfig {
+    <span class="k">struct</span> MiaConfig {
         <span class="k">let</span> scrt2Url: String; <span class="k">let</span> orgId: String; <span class="k">let</span> esDeveloperName: String
         <span class="k">let</span> capabilitiesVersion: String; <span class="k">let</span> logoUrl: String
     }
-    <span class="k">var</span> config: NishkaConfig!
+    <span class="k">var</span> config: MiaConfig!
 
     <span class="k">override func</span> <span class="fn">viewDidLoad</span>() {
         <span class="k">super</span>.viewDidLoad()
         <span class="k">let</span> cc = WKUserContentController()
-        cc.add(<span class="k">self</span>, name: <span class="s">"nishka"</span>)                 <span class="c">// JS bridge (logging / events)</span>
+        cc.add(<span class="k">self</span>, name: <span class="s">"mia"</span>)                 <span class="c">// JS bridge (logging / events)</span>
 
         <span class="c">// Inject config BEFORE any page script runs.</span>
         <span class="k">let</span> js = <span class="s">"""
-          window.__NISHKA_CONFIG__ = {
+          window.__MIA_CONFIG__ = {
             scrt2Url: "\(config.scrt2Url)", orgId: "\(config.orgId)",
             esDeveloperName: "\(config.esDeveloperName)",
             capabilitiesVersion: "\(config.capabilitiesVersion)",
@@ -435,14 +435,14 @@ Native app intercepts / assists:
         <span class="k">let</span> wkCfg = WKWebViewConfiguration(); wkCfg.userContentController = cc
         wkCfg.allowsInlineMediaPlayback = <span class="k">true</span>
         <span class="c">// Serve app assets over a real origin instead of file:// (see the warning above).</span>
-        wkCfg.setURLSchemeHandler(NishkaAssetHandler(), forURLScheme: <span class="s">"app-assets"</span>)
+        wkCfg.setURLSchemeHandler(MiaAssetHandler(), forURLScheme: <span class="s">"app-assets"</span>)
         webView = WKWebView(frame: .zero, configuration: wkCfg)
         webView.navigationDelegate = <span class="k">self</span>
         webView.scrollView.bounces = <span class="k">false</span>            <span class="c">// reduce the "web scroll" tell</span>
         view.addSubview(webView)                        <span class="c">// pin with your layout / safe area</span>
 
-        <span class="c">// Custom-scheme URL → served from the bundle by NishkaAssetHandler (no network hop).</span>
-        webView.load(URLRequest(url: URL(string: <span class="s">"app-assets://nishka/host.html"</span>)!))
+        <span class="c">// Custom-scheme URL → served from the bundle by MiaAssetHandler (no network hop).</span>
+        webView.load(URLRequest(url: URL(string: <span class="s">"app-assets://mia/host.html"</span>)!))
     }
 
     <span class="c">// Product-tap interception — see §7.</span>
@@ -462,23 +462,23 @@ Native app intercepts / assists:
     }
     <span class="k">private func</span> <span class="fn">navigateToNativePDP</span>(productId: String) { <span class="c">/* push ProductViewController */</span> }
 }</code></pre>
-      <div class="note"><code>injectionTime: .atDocumentStart</code> guarantees <code>__NISHKA_CONFIG__</code> exists before the host script reads it. <code>NishkaAssetHandler</code> is a small <code>WKURLSchemeHandler</code> that reads <code>host.html</code> (and, in static mode, <code>messaging.umd.js</code>) from the app bundle and returns them with a <code>text/html</code> / <code>application/javascript</code> content type — no network hop, real origin. The widget bundle still comes from the CDN unless you use static mode (§12).</div>
+      <div class="note"><code>injectionTime: .atDocumentStart</code> guarantees <code>__MIA_CONFIG__</code> exists before the host script reads it. <code>MiaAssetHandler</code> is a small <code>WKURLSchemeHandler</code> that reads <code>host.html</code> (and, in static mode, <code>messaging.umd.js</code>) from the app bundle and returns them with a <code>text/html</code> / <code>application/javascript</code> content type — no network hop, real origin. The widget bundle still comes from the CDN unless you use static mode (§12).</div>
     </section>
 
     <section id="g6">
       <h2><span class="num">06</span> Step 3 — Host it in a WebView (Android)</h2>
       <p>Use <code>android.webkit.WebView</code>. Enable JS + DOM storage, inject config, serve the asset via <b><code>WebViewAssetLoader</code></b> (a real <code>https</code> origin, not <code>file:///android_asset/</code>), and override URL loading.</p>
       <div class="warn"><b>Do not load from <code>file:///android_asset/</code> (mandatory — mobile config review).</b> Same reason as iOS: a <code>file://</code> page has no true origin, so DOM storage, the SCRT2 cross-origin connection, and conversation resume (§11) are unreliable. Use <code>androidx.webkit.WebViewAssetLoader</code> to serve the bundled host page under an <code>https://appassets.androidplatform.net/…</code> origin — assets are read locally (no network hop) but the page gets a stable origin.</div>
-      <pre><span class="lang">kotlin</span><code><span class="k">class</span> <span class="fn">NishkaFragment</span> : Fragment() {
+      <pre><span class="lang">kotlin</span><code><span class="k">class</span> <span class="fn">MiaFragment</span> : Fragment() {
 
-    <span class="k">data class</span> NishkaConfig(
+    <span class="k">data class</span> MiaConfig(
         <span class="k">val</span> scrt2Url: String, <span class="k">val</span> orgId: String, <span class="k">val</span> esDeveloperName: String,
         <span class="k">val</span> capabilitiesVersion: String, <span class="k">val</span> logoUrl: String)
-    <span class="k">private lateinit var</span> config: NishkaConfig       <span class="c">// from remote config — never hardcode</span>
+    <span class="k">private lateinit var</span> config: MiaConfig       <span class="c">// from remote config — never hardcode</span>
 
     @SuppressLint(<span class="s">"SetJavaScriptEnabled"</span>)
     <span class="k">override fun</span> <span class="fn">onViewCreated</span>(view: View, s: Bundle?) {
-        <span class="k">val</span> webView = view.findViewById&lt;WebView&gt;(R.id.nishka_webview)
+        <span class="k">val</span> webView = view.findViewById&lt;WebView&gt;(R.id.mia_webview)
         webView.settings.apply {
             javaScriptEnabled = <span class="k">true</span>
             domStorageEnabled = <span class="k">true</span>                    <span class="c">// widget needs web storage</span>
@@ -486,8 +486,8 @@ Native app intercepts / assists:
         }
 
         webView.addJavascriptInterface(<span class="k">object</span> {
-            @JavascriptInterface <span class="k">fun</span> <span class="fn">log</span>(msg: String) { Log.d(<span class="s">"Nishka"</span>, msg) }
-        }, <span class="s">"NishkaBridge"</span>)
+            @JavascriptInterface <span class="k">fun</span> <span class="fn">log</span>(msg: String) { Log.d(<span class="s">"Mia"</span>, msg) }
+        }, <span class="s">"MiaBridge"</span>)
 
         <span class="c">// Serve bundled assets under a real https origin (no network hop).</span>
         <span class="k">val</span> assetLoader = WebViewAssetLoader.Builder()
@@ -500,7 +500,7 @@ Native app intercepts / assists:
 
             <span class="k">override fun</span> <span class="fn">onPageStarted</span>(v: WebView, url: String?, f: Bitmap?) {
                 v.evaluateJavascript(
-                    <span class="s">"""window.__NISHKA_CONFIG__ = {
+                    <span class="s">"""window.__MIA_CONFIG__ = {
                         scrt2Url:"${config.scrt2Url}", orgId:"${config.orgId}",
                         esDeveloperName:"${config.esDeveloperName}",
                         capabilitiesVersion:"${config.capabilitiesVersion}",
@@ -513,8 +513,8 @@ Native app intercepts / assists:
                 <span class="k">return if</span> (pid != <span class="k">null</span>) { navigateToNativePDP(pid); <span class="k">true</span> } <span class="k">else false</span>
             }
         }
-        <span class="c">// host.html + (static mode) messaging.umd.js live under src/main/assets/nishka/</span>
-        webView.loadUrl(<span class="s">"https://appassets.androidplatform.net/assets/nishka/host.html"</span>)
+        <span class="c">// host.html + (static mode) messaging.umd.js live under src/main/assets/mia/</span>
+        webView.loadUrl(<span class="s">"https://appassets.androidplatform.net/assets/mia/host.html"</span>)
     }
     <span class="k">private fun</span> <span class="fn">navigateToNativePDP</span>(productId: String) { <span class="c">/* navigate to your PDP */</span> }
 }</code></pre>
@@ -542,7 +542,7 @@ Native app intercepts / assists:
       <h3>Cases that silently bypass the interceptor</h3>
       <ul class="bul">
         <li><b><code>openLinksInNewTab</code> must stay <code>false</code></b> (its default, set in §4). If enabled, taps open in a new window that does <b>not</b> reliably reach <code>shouldOverrideUrlLoading</code> (Android) or the navigation delegate (iOS) — interception silently fails.</li>
-        <li><b>Cart management enabled on the deployment changes the tap entirely.</b> If the messaging deployment has cart management on, a product tap <b>stops being a link navigation</b> and instead drives the conversation to an <b>in-chat product detail view</b> — the delegate never fires and there is nothing to intercept. This flips the whole §7 design, so <b>confirm whether cart management will be enabled before building the interceptor</b> (§14, item 18). Nishka's launch scope is discovery-only (no cart / checkout), so it should be off — but verify it on the actual deployment.</li>
+        <li><b>Cart management enabled on the deployment changes the tap entirely.</b> If the messaging deployment has cart management on, a product tap <b>stops being a link navigation</b> and instead drives the conversation to an <b>in-chat product detail view</b> — the delegate never fires and there is nothing to intercept. This flips the whole §7 design, so <b>confirm whether cart management will be enabled before building the interceptor</b> (§14, item 18). Mia's launch scope is discovery-only (no cart / checkout), so it should be off — but verify it on the actual deployment.</li>
         <li><b>Embedded express-payment surfaces need a real page origin.</b> Any express-payment surface the widget may render requires a true <code>https</code> origin to work — a further reason to serve the host page over a custom scheme handler rather than <code>file://</code> (§5/§6). This is not a case to route to the native PDP; it's a reason the §4.1 origin rule is mandatory.</li>
       </ul>
       <h3>Decisions to lock</h3>
@@ -591,12 +591,12 @@ Native app intercepts / assists:
       <h3>Mitigations — make cold start feel instant</h3>
       <ul class="bul">
         <li><b>Bundle the widget locally (static mode).</b> Biggest single win — removes the CDN fetch from the critical path (and drops the CDN runtime dependency + CSP allowlist). Point the <code>&lt;script src&gt;</code> at a bundled copy of the pinned bundle instead of the CDN (§12); <b>get the bundle from Cimulate</b>.</li>
-        <li><b>Pre-warm the WebView.</b> Create the WebView and load the host HTML <em>before</em> the user taps (e.g. when the parent tab appears), so <code>injectMessagingWidget</code> has already run by the time they open Nishka.</li>
+        <li><b>Pre-warm the WebView.</b> Create the WebView and load the host HTML <em>before</em> the user taps (e.g. when the parent tab appears), so <code>injectMessagingWidget</code> has already run by the time they open Mia.</li>
         <li><b>Pin &amp; cache the CDN version.</b> If you can't go static, pin the version segment in the <code>&lt;script src&gt;</code> URL (§4) so the bundle is HTTP-cacheable — the 2nd open is much faster than the 1st.</li>
         <li><b>Native skeleton during load.</b> Show a native splash/skeleton for the ~1–2 s window. The native frame is already on screen, so perceived latency stays low.</li>
         <li><b>Keep the instance alive.</b> Don't destroy the WebView on back — retain the VC/fragment (§7) so re-opening is instant and conversation state survives.</li>
       </ul>
-      <div class="note"><b>Bottom line:</b> the cold-start CDN fetch is the only WebView-specific latency, and static-mode + pre-warming largely neutralize it. Steady-state rendering is a non-issue, and the dominant agent-response latency is identical whether Nishka runs in a WebView or a fully native shell.</div>
+      <div class="note"><b>Bottom line:</b> the cold-start CDN fetch is the only WebView-specific latency, and static-mode + pre-warming largely neutralize it. Steady-state rendering is a non-issue, and the dominant agent-response latency is identical whether Mia runs in a WebView or a fully native shell.</div>
     </section>
 
     <section id="g10">
@@ -625,7 +625,7 @@ Native app intercepts / assists:
       <div class="flow">Native app (holds the authenticated session + can request a signed JWT)
   ├─ IDENTITY:  gets a <span class="hl">signed JWT</span> from Tanishq backend  →  passes to widget's user-verification hook
   │                                                    →  Salesforce verifies signature  →  agent trusts the customer
-  └─ CONTEXT:   injects non-sensitive details into the WebView  (same __NISHKA_CONFIG__ pattern)
+  └─ CONTEXT:   injects non-sensitive details into the WebView  (same __MIA_CONFIG__ pattern)
                     →  host HTML sets them as  <span class="hl">messagingConfig.routingAttributes</span>
                          →  widget → SCRT2 → Agentforce sees them as conversation variables
                               →  agent action calls Tanishq API keyed on the VERIFIED identity  →  digigold balance</div>
@@ -633,7 +633,7 @@ Native app intercepts / assists:
 
       <h3>Wiring routing attributes (context)</h3>
       <p>Extend the host config with a <code>routingAttributes</code> object and pass it through. Keep it to non-sensitive personalization:</p>
-      <pre><span class="lang">js</span><code><span class="c">// in nishka_host.html — merge into the injectMessagingWidget call (§4)</span>
+      <pre><span class="lang">js</span><code><span class="c">// in mia_host.html — merge into the injectMessagingWidget call (§4)</span>
 messagingConfig: {
   scrt2Url: cfg.scrt2Url, orgId: cfg.orgId,
   esDeveloperName: cfg.esDeveloperName,
@@ -643,7 +643,7 @@ messagingConfig: {
       <p>Native side just adds the object to the injected config (§5/§6). iOS:</p>
       <pre><span class="lang">swift</span><code><span class="c">// context only — safe to be client-set; do NOT put anything that authorizes data access here</span>
 <span class="k">let</span> attrs = <span class="s">"""{ "firstName":"\(user.firstName)", "loyaltyTier":"\(user.tier)" }"""</span>
-<span class="k">let</span> js = <span class="s">"""window.__NISHKA_CONFIG__ = { /* ...§5 fields... */,
+<span class="k">let</span> js = <span class="s">"""window.__MIA_CONFIG__ = { /* ...§5 fields... */,
     routingAttributes: \(attrs) };"""</span>
 cc.addUserScript(WKUserScript(source: js, injectionTime: .atDocumentStart, forMainFrameOnly: <span class="k">true</span>))</code></pre>
 
@@ -679,7 +679,7 @@ cc.addUserScript(WKUserScript(source: js, injectionTime: .atDocumentStart, forMa
       <ol class="steps">
         <li><b>Push notifications for messaging.</b> Configure <b>MIAW push</b> (APNs on iOS, FCM on Android) and register the device token via <code>registerDeviceForPushNotifications</code> — <b>native-side, not the widget</b>. Confirm how registration binds to the widget's conversation (§14, item&nbsp;3).</li>
         <li><b>Durable conversation resume.</b> Reopening — especially a cold start from a push — must reconnect to the <b>same conversation</b>, not start fresh. Not available today; <b>gated on the stable-identity work in §10</b> (§14, item&nbsp;2).</li>
-        <li><b>Tap-through routing.</b> A messaging push should deep-link straight into the Nishka WebView (reopened to the live conversation), not the app home.</li>
+        <li><b>Tap-through routing.</b> A messaging push should deep-link straight into the Mia WebView (reopened to the live conversation), not the app home.</li>
         <li><b>Presence / lifecycle.</b> Keep the messaging session valid across background/foreground; don't tear down the conversation when the WebView is dismissed (retain it as in §7, or rely on server-side session + resume).</li>
       </ol>
       <div class="note"><b>Honest status:</b> in-session handoff works now; <b>async replies across app restart are the least-proven piece and are blocked on Salesforce delivery of durable resume</b> (which is expected to build on §10's verified identity). The §11 caveat stands — resolve items&nbsp;2 &amp; 3 in §14 before committing dates. Push credentials, Omni-Channel queue, and device registration are app/admin prerequisites that can proceed in parallel.</div>
@@ -712,7 +712,7 @@ cc.addUserScript(WKUserScript(source: js, injectionTime: .atDocumentStart, forMa
       <h2><span class="num">13</span> Testing checklist</h2>
       <h3>Discovery — deliverable now (§1–§9)</h3>
       <ul class="check">
-        <li>Widget loads and connects (guest) — welcome message from Nishka appears.</li>
+        <li>Widget loads and connects (guest) — welcome message from Mia appears.</li>
         <li>Free-text query returns a <b>product carousel</b>; horizontal touch scroll works.</li>
         <li><b>Chips / suggestions</b> render and are tappable; tapping sends the follow-up.</li>
         <li>Tapping a product <b>opens the native PDP</b> with the correct product (not a web page in the WebView).</li>
@@ -784,7 +784,7 @@ cc.addUserScript(WKUserScript(source: js, injectionTime: .atDocumentStart, forMa
         <tr><td>15</td><td>Omni-Channel queue, business hours, no-agent fallback</td><td><b>Tanishq</b> (SF admin)</td><td>§11 prerequisite.</td></tr>
         <tr><td>16</td><td>Push credentials (APNs/FCM) on the deployment + app-side registration</td><td><b>Tanishq</b></td><td>§11; pending item 3.</td></tr>
         <tr><td>17</td><td>Create Case action &amp; pre-filled fields</td><td><b>Tanishq</b></td><td>Case-creation flow (§11).</td></tr>
-        <tr class="rowbest"><td>18</td><td><b>Confirm whether cart management will be enabled on the deployment</b></td><td><b>Salesforce</b> confirm · <b>Tanishq</b> decide</td><td>The one answer that materially changes §7: with cart management on, product taps become an in-chat detail view instead of a link navigation, so the interceptor never fires. Nishka is discovery-only, so expected off — verify on the deployment.</td></tr>
+        <tr class="rowbest"><td>18</td><td><b>Confirm whether cart management will be enabled on the deployment</b></td><td><b>Salesforce</b> confirm · <b>Tanishq</b> decide</td><td>The one answer that materially changes §7: with cart management on, product taps become an in-chat detail view instead of a link navigation, so the interceptor never fires. Mia is discovery-only, so expected off — verify on the deployment.</td></tr>
       </table>
       <div class="note"><b>Critical path to the full experience:</b> items 1 → 2 (Salesforce) unblock the verified-identity lookups (§10) and async escalation resume (§11). Every Tanishq-owned prerequisite (items 8–17) is independent of that Salesforce work and <b>can start now</b>, so those two capabilities are the only true gates once they land.</div>
     </section>
